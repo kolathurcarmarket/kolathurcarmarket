@@ -557,6 +557,7 @@ table.data-table {
   font-size: 0.82rem;
   letter-spacing: 0.06em;
 }
+.pin-cell { margin-right: 0.4rem; display: inline-block; min-width: 4.2ch; }
 
 .status-pill {
   font-size: 0.74rem;
