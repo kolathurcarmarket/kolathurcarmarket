@@ -58,12 +58,12 @@ function animateCounter(id, target) {
 
 async function loadDealers() {
   const tbody = document.getElementById("dealers-tbody");
-  tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Loading dealers…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Loading dealers…</td></tr>`;
 
   const { data, error } = await window.db.rpc("admin_list_dealers", { p_admin_id: ADMIN_SESSION.id });
   if (error) {
     console.error(error);
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${escapeHtml(friendlyError(error))}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">${escapeHtml(friendlyError(error))}</td></tr>`;
     return;
   }
   ALL_DEALERS = data || [];
@@ -73,7 +73,7 @@ async function loadDealers() {
 function renderDealers(list) {
   const tbody = document.getElementById("dealers-tbody");
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">No dealers yet. Add your first dealer to get started.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No dealers yet. Add your first dealer to get started.</td></tr>`;
     return;
   }
   tbody.innerHTML = list
@@ -90,6 +90,12 @@ function renderDealers(list) {
         </div>
       </td>
       <td><span class="plate-chip">${escapeHtml(d.username)}</span></td>
+      <td>
+        <span class="plate-chip pin-cell" data-pin="${escapeHtml(d.pin || "")}" data-revealed="0">
+          ${d.pin ? "••••" : "—"}
+        </span>
+        ${d.pin ? `<button class="btn btn--ghost btn--sm" data-action="toggle-pin" data-id="${d.id}">Show</button>` : ""}
+      </td>
       <td>${escapeHtml(d.phone || "—")}</td>
       <td>${escapeHtml(d.email || "—")}</td>
       <td><span class="status-pill status-pill--${d.status}">${escapeHtml(d.status)}</span></td>
@@ -97,11 +103,47 @@ function renderDealers(list) {
         <button class="btn btn--ghost btn--sm" data-action="toggle" data-id="${d.id}" data-status="${d.status}">
           ${d.status === "active" ? "Deactivate" : "Activate"}
         </button>
+        <button class="btn btn--ghost btn--sm" data-action="reset-pin" data-id="${d.id}">Reset PIN</button>
         <button class="btn btn--danger btn--sm" data-action="delete" data-id="${d.id}">Remove</button>
       </td>
     </tr>`
     )
     .join("");
+
+  tbody.querySelectorAll('[data-action="toggle-pin"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const cell = btn.previousElementSibling;
+      const revealed = cell.dataset.revealed === "1";
+      cell.textContent = revealed ? "••••" : cell.dataset.pin;
+      cell.dataset.revealed = revealed ? "0" : "1";
+      btn.textContent = revealed ? "Show" : "Hide";
+    });
+  });
+
+  tbody.querySelectorAll('[data-action="reset-pin"]').forEach((btn) => {
+    btn.addEventListener(
+      "click",
+      guardClick(btn, async () => {
+        const newPin = prompt("Enter a new 4–6 digit PIN for this dealer:");
+        if (newPin === null) return;
+        if (!/^\d{4,6}$/.test(newPin.trim())) {
+          toast("PIN must be 4–6 digits.", "error");
+          return;
+        }
+        const { error } = await window.db.rpc("admin_reset_dealer_pin", {
+          p_admin_id: ADMIN_SESSION.id,
+          p_dealer_id: btn.dataset.id,
+          p_new_pin: newPin.trim(),
+        });
+        if (error) {
+          toast(friendlyError(error), "error");
+          return;
+        }
+        toast("PIN reset.", "success");
+        await loadDealers();
+      })
+    );
+  });
 
   tbody.querySelectorAll('[data-action="toggle"]').forEach((btn) => {
     btn.addEventListener(
