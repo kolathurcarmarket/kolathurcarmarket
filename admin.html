@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Admin Dashboard — DriveDesk</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="app-topbar">
+    <div class="brand">
+      <span class="brand__mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M3 13l1.6-4.8A2 2 0 0 1 6.5 7h11a2 2 0 0 1 1.9 1.2L21 13" stroke="#F0A63A" stroke-width="1.6" stroke-linecap="round"/>
+          <rect x="2.5" y="13" width="19" height="6" rx="1.6" stroke="#F0A63A" stroke-width="1.6"/>
+          <circle cx="7" cy="19" r="1.6" fill="#0E1013" stroke="#F0A63A" stroke-width="1.4"/>
+          <circle cx="17" cy="19" r="1.6" fill="#0E1013" stroke="#F0A63A" stroke-width="1.4"/>
+        </svg>
+      </span>
+      <span class="brand__name">Drive<span>Desk</span></span>
+    </div>
+    <div class="topbar-user">
+      <div class="who">
+        <div class="name" id="current-username">—</div>
+        <div class="role">Administrator</div>
+      </div>
+      <span class="avatar">AD</span>
+      <button class="btn btn--ghost btn--sm" id="logout-btn">Log out</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1>Dealer network overview</h1>
+        <p>Add dealers, hand them a username &amp; PIN, and watch the lot fill up.</p>
+      </div>
+      <button class="btn btn--primary" id="btn-open-add-dealer">+ Add dealer</button>
+    </div>
+
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="label">Total dealers</div>
+        <div class="value" id="stat-total-dealers">00</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Active dealers</div>
+        <div class="value" id="stat-active-dealers">00</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total listings</div>
+        <div class="value" id="stat-total-cars">00</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Available now</div>
+        <div class="value" id="stat-available-cars">00</div>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <input type="search" class="search-input" id="dealer-search" placeholder="Search dealers by name, username, phone…" />
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Dealer</th>
+              <th>Username</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dealers-tbody">
+            <tr><td colspan="6" class="empty-row">Loading dealers…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add dealer modal -->
+<div class="modal-backdrop" id="add-dealer-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-dealer-title">
+    <div class="modal-head">
+      <h2 id="add-dealer-title">Add a new dealer</h2>
+      <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <form id="form-add-dealer" novalidate>
+      <div class="form-grid">
+        <div class="field field--full">
+          <label for="new-dealer-username">Username</label>
+          <div class="plate-input-wrap">
+            <span class="plate-flag">DLR</span>
+            <input type="text" id="new-dealer-username" placeholder="e.g. rk.motors" required />
+          </div>
+        </div>
+        <div class="field field--full">
+          <label for="new-dealer-pin">PIN (4–6 digits)</label>
+          <input type="password" id="new-dealer-pin" inputmode="numeric" placeholder="••••" required />
+        </div>
+        <div class="field field--full">
+          <label for="new-dealer-name">Dealer / contact name</label>
+          <input type="text" id="new-dealer-name" placeholder="e.g. Rajesh Kumar" required />
+        </div>
+        <div class="field">
+          <label for="new-dealer-phone">Phone</label>
+          <input type="tel" id="new-dealer-phone" placeholder="98xxxxxxxx" />
+        </div>
+        <div class="field">
+          <label for="new-dealer-email">Email</label>
+          <input type="email" id="new-dealer-email" placeholder="name@shop.com" />
+        </div>
+        <div class="field field--full">
+          <label for="new-dealer-shop">Shop / yard name</label>
+          <input type="text" id="new-dealer-shop" placeholder="e.g. RK Second Hand Cars" />
+        </div>
+      </div>
+      <p class="form-error" id="add-dealer-error" role="alert"></p>
+      <button type="submit" class="btn btn--primary btn--block" id="btn-add-dealer">Add dealer</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

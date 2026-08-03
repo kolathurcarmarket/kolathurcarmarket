@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>DriveDesk — Dealer Login Portal</title>
+<meta name="description" content="Login portal for second-hand car dealers and admins." />
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="login-shell">
+
+  <!-- Left: brand / visual -->
+  <section class="login-visual">
+    <div class="brand">
+      <span class="brand__mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M3 13l1.6-4.8A2 2 0 0 1 6.5 7h11a2 2 0 0 1 1.9 1.2L21 13" stroke="#F0A63A" stroke-width="1.6" stroke-linecap="round"/>
+          <rect x="2.5" y="13" width="19" height="6" rx="1.6" stroke="#F0A63A" stroke-width="1.6"/>
+          <circle cx="7" cy="19" r="1.6" fill="#0E1013" stroke="#F0A63A" stroke-width="1.4"/>
+          <circle cx="17" cy="19" r="1.6" fill="#0E1013" stroke="#F0A63A" stroke-width="1.4"/>
+        </svg>
+      </span>
+      <span class="brand__name">Drive<span>Desk</span></span>
+    </div>
+
+    <div class="visual-copy">
+      <div class="eyebrow">Dealer Network Portal</div>
+      <h1>One key for<br/>every lot on<br/>your network.</h1>
+      <p>Admins onboard dealers with a username &amp; PIN. Dealers sign in to manage their own inventory — no paperwork, no waiting.</p>
+    </div>
+
+    <div class="speedo" aria-hidden="true">
+      <svg viewBox="0 0 460 460">
+        <circle cx="230" cy="230" r="190" fill="none" stroke="#1E232B" stroke-width="14"/>
+        <path d="M 92 328 A 190 190 0 1 1 368 328" fill="none" stroke="#262C35" stroke-width="14" stroke-linecap="round"/>
+        <path d="M 92 328 A 190 190 0 0 1 230 40" fill="none" stroke="#F0A63A" stroke-width="14" stroke-linecap="round" opacity="0.55"/>
+        <g class="speedo-needle">
+          <line x1="230" y1="230" x2="230" y2="70" stroke="#FFBF5C" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="230" cy="230" r="10" fill="#FFBF5C"/>
+      </svg>
+    </div>
+
+    <div class="visual-foot">DRIVEDESK · SECURE DEALER ACCESS · v1.0</div>
+  </section>
+
+  <!-- Right: login card -->
+  <section class="login-panel">
+    <div class="login-card">
+      <div class="plate-strip" id="plate-role-label">DEALER ACCESS</div>
+
+      <div class="role-tabs" role="tablist" aria-label="Choose login type">
+        <button class="role-tab active" data-role="admin" role="tab" aria-selected="true">Admin</button>
+        <button class="role-tab" data-role="dealer" role="tab" aria-selected="false">Dealer</button>
+      </div>
+
+      <!-- Admin login -->
+      <div class="auth-panel active" id="panel-admin">
+        <form id="form-admin-login" novalidate>
+          <div class="field">
+            <label for="admin-username">Admin username</label>
+            <div class="plate-input-wrap">
+              <span class="plate-flag">ADM</span>
+              <input type="text" id="admin-username" autocomplete="username" placeholder="e.g. admin" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="admin-pin">PIN</label>
+            <div class="pin-row">
+              <input type="password" id="admin-pin" inputmode="numeric" autocomplete="current-password" placeholder="••••" required />
+              <button type="button" class="pin-toggle" data-target="admin-pin">Show</button>
+            </div>
+          </div>
+          <p class="form-error" id="admin-login-error" role="alert"></p>
+          <button type="submit" class="btn btn--primary btn--block" id="btn-admin-login">Sign in as admin</button>
+        </form>
+      </div>
+
+      <!-- Dealer login -->
+      <div class="auth-panel" id="panel-dealer">
+        <form id="form-dealer-login" novalidate>
+          <div class="field">
+            <label for="dealer-username">Dealer username</label>
+            <div class="plate-input-wrap">
+              <span class="plate-flag">DLR</span>
+              <input type="text" id="dealer-username" autocomplete="username" placeholder="e.g. rk.motors" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="dealer-pin">PIN</label>
+            <div class="pin-row">
+              <input type="password" id="dealer-pin" inputmode="numeric" autocomplete="current-password" placeholder="••••" required />
+              <button type="button" class="pin-toggle" data-target="dealer-pin">Show</button>
+            </div>
+          </div>
+          <p class="form-error" id="dealer-login-error" role="alert"></p>
+          <button type="submit" class="btn btn--primary btn--block" id="btn-dealer-login">Sign in as dealer</button>
+        </form>
+      </div>
+
+      <p class="hint">Don't have a login? Ask your admin to add your username &amp; PIN.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>
