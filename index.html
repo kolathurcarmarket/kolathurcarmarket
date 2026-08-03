@@ -48,53 +48,26 @@
 
     <section class="login-panel">
       <div class="login-card">
-        <div class="plate-strip" id="plate-role-label">ADMIN ACCESS</div>
-        <div class="role-tabs" role="tablist" aria-label="Choose login type">
-          <button class="role-tab active" data-role="admin" role="tab" aria-selected="true">Admin</button>
-          <button class="role-tab" data-role="dealer" role="tab" aria-selected="false">Dealer</button>
-        </div>
+        <div class="plate-strip">SECURE SIGN IN</div>
 
-        <div class="auth-panel active" id="panel-admin">
-          <form id="form-admin-login" novalidate>
-            <div class="field">
-              <label for="admin-username">Admin username</label>
-              <div class="plate-input-wrap">
-                <span class="plate-flag">ADM</span>
-                <input type="text" id="admin-username" autocomplete="username" placeholder="e.g. admin" required />
-              </div>
+        <form id="form-login" novalidate>
+          <div class="field">
+            <label for="login-username">Username</label>
+            <div class="plate-input-wrap">
+              <span class="plate-flag">ID</span>
+              <input type="text" id="login-username" autocomplete="username" placeholder="e.g. rk.motors" required />
             </div>
-            <div class="field">
-              <label for="admin-pin">PIN</label>
-              <div class="pin-row">
-                <input type="password" id="admin-pin" inputmode="numeric" autocomplete="current-password" placeholder="••••" required />
-                <button type="button" class="pin-toggle" data-target="admin-pin">Show</button>
-              </div>
+          </div>
+          <div class="field">
+            <label for="login-pin">PIN</label>
+            <div class="pin-row">
+              <input type="password" id="login-pin" inputmode="numeric" autocomplete="current-password" placeholder="••••" required />
+              <button type="button" class="pin-toggle" data-target="login-pin">Show</button>
             </div>
-            <p class="form-error" id="admin-login-error" role="alert"></p>
-            <button type="submit" class="btn btn--primary btn--block" id="btn-admin-login">Sign in as admin</button>
-          </form>
-        </div>
-
-        <div class="auth-panel" id="panel-dealer">
-          <form id="form-dealer-login" novalidate>
-            <div class="field">
-              <label for="dealer-username">Dealer username</label>
-              <div class="plate-input-wrap">
-                <span class="plate-flag">DLR</span>
-                <input type="text" id="dealer-username" autocomplete="username" placeholder="e.g. rk.motors" required />
-              </div>
-            </div>
-            <div class="field">
-              <label for="dealer-pin">PIN</label>
-              <div class="pin-row">
-                <input type="password" id="dealer-pin" inputmode="numeric" autocomplete="current-password" placeholder="••••" required />
-                <button type="button" class="pin-toggle" data-target="dealer-pin">Show</button>
-              </div>
-            </div>
-            <p class="form-error" id="dealer-login-error" role="alert"></p>
-            <button type="submit" class="btn btn--primary btn--block" id="btn-dealer-login">Sign in as dealer</button>
-          </form>
-        </div>
+          </div>
+          <p class="form-error" id="login-error" role="alert"></p>
+          <button type="submit" class="btn btn--primary btn--block" id="btn-login">Sign in</button>
+        </form>
 
         <p class="hint">Don't have a login? Ask your admin to add your username &amp; PIN.</p>
       </div>
@@ -151,10 +124,10 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Dealer</th><th>Username</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>Dealer</th><th>Username</th><th>PIN</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="dealers-tbody">
-              <tr><td colspan="6" class="empty-row">Loading dealers…</td></tr>
+              <tr><td colspan="7" class="empty-row">Loading dealers…</td></tr>
             </tbody>
           </table>
         </div>
