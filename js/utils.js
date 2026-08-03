@@ -108,8 +108,7 @@ function switchView(name) {
 function logout() {
   clearSession();
   switchView("login");
-  document.getElementById("form-admin-login")?.reset();
-  document.getElementById("form-dealer-login")?.reset();
+  document.getElementById("form-login")?.reset();
 }
 
 /* ---------------------------------------------------------------
