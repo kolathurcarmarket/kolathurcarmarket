@@ -657,6 +657,10 @@ table.data-table {
   animation: modal-in 0.22s var(--ease);
 }
 @keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) {
+  .modal-backdrop { align-items: flex-start; padding: 0.75rem; }
+  .modal { max-height: 92dvh; margin-top: 0.5rem; }
+}
 .modal-head {
   display: flex;
   justify-content: space-between;
@@ -825,6 +829,62 @@ table.data-table {
 .wizard-review-row .rr-edit {
   background: none; border: none; color: var(--amber);
   font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+
+/* Number-plate builder — live preview + 4 input boxes */
+.plate-preview {
+  display: flex;
+  align-items: stretch;
+  border: 3px solid #111;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+.plate-preview.board-own { background: #f5f5f0; }
+.plate-preview.board-commercial { background: #ffc400; }
+.plate-preview__strip {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #1447a8; color: #fff; font-size: 0.6rem; font-weight: 700;
+  padding: 0 0.4rem; letter-spacing: 0.02em;
+}
+.plate-preview__text {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: #111;
+  padding: 0.6rem 0.4rem;
+  letter-spacing: 0.03em;
+}
+.plate-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.plate-field label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+.plate-field .wizard-input {
+  padding: 0.7rem 0.3rem;
+  font-size: 1.05rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+select.wizard-input { -webkit-appearance: none; appearance: none; }
+
+@media (max-width: 480px) {
+  .plate-fields { grid-template-columns: 1fr 1fr; row-gap: 0.7rem; }
+  .plate-preview__text { font-size: 1.25rem; }
 }
 
 @media (max-width: 640px) {
