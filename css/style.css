@@ -803,6 +803,52 @@ table.data-table {
 .plate-swatch--own_ev { background: #0a7a3d; }
 .plate-swatch--commercial_ev { background: #0a7a3d; box-shadow: inset 0 0 0 3px #ffc400; }
 
+/* Board-type picker — 4 real mini plates showing the entered number */
+.board-picker-list { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.2rem; }
+.board-picker-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.board-picker-card:hover { border-color: var(--amber-dim); }
+.board-picker-card.selected { border-color: var(--amber); background: rgba(240,166,58,0.10); }
+.board-picker-card input[type="radio"] { width: 20px; height: 20px; accent-color: var(--amber); flex-shrink: 0; }
+.board-picker-label { font-size: 0.9rem; font-weight: 600; line-height: 1.25; flex: 1; }
+
+.board-picker-plate {
+  flex-shrink: 0;
+  min-width: 150px;
+  border: 2px solid #111;
+  border-radius: 5px;
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+}
+.board-picker-plate__text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  color: #111;
+}
+.board-picker-plate.board-own { background: #f5f5f0; }
+.board-picker-plate.board-commercial { background: #ffc400; }
+.board-picker-plate.board-own_ev { background: #0a7a3d; }
+.board-picker-plate.board-own_ev .board-picker-plate__text { color: #fff; }
+.board-picker-plate.board-commercial_ev { background: #0a7a3d; }
+.board-picker-plate.board-commercial_ev .board-picker-plate__text { color: #ffc400; }
+
+@media (max-width: 480px) {
+  .board-picker-card { flex-wrap: wrap; }
+  .board-picker-plate { min-width: 130px; }
+  .board-picker-plate__text { font-size: 0.8rem; }
+}
+
 .wizard-input-wrap { margin-bottom: 1.4rem; }
 .wizard-input {
   width: 100%;
