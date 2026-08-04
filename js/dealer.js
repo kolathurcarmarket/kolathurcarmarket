@@ -1,5 +1,7 @@
 let DEALER_SESSION = null;
 let ALL_CARS = [];
+let MASTER_CARS = [];
+let CURRENT_GARAGE = "own";
 
 /* ===================================================================
    ADD-A-CAR WIZARD — one question per screen, big touch targets.
@@ -90,6 +92,20 @@ function wireDealerView() {
       document.querySelectorAll(".status-filter").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       filterCars(document.getElementById("car-search").value, btn.dataset.status);
+    });
+  });
+
+  document.querySelectorAll(".garage-tab").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      document.querySelectorAll(".garage-tab").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      CURRENT_GARAGE = btn.dataset.garage;
+      document.getElementById("btn-open-add-car").style.display = CURRENT_GARAGE === "own" ? "" : "none";
+      if (CURRENT_GARAGE === "master") {
+        await loadMasterCars();
+      } else {
+        renderCars(ALL_CARS, false);
+      }
     });
   });
 }
@@ -330,10 +346,18 @@ function renderWizardStep() {
       document.getElementById("pp-series").textContent = seriesEl.value || "AA";
       document.getElementById("pp-num").textContent = numEl.value || "0000";
     };
-    stateEl.addEventListener("change", updatePreview);
-    distEl.addEventListener("input", () => { distEl.value = distEl.value.replace(/\D/g, ""); updatePreview(); });
-    seriesEl.addEventListener("input", () => { seriesEl.value = seriesEl.value.toUpperCase().replace(/[^A-Z]/g, ""); updatePreview(); });
-    numEl.addEventListener("input", () => { numEl.value = numEl.value.replace(/\D/g, ""); updatePreview(); });
+    stateEl.addEventListener("change", () => { updatePreview(); distEl.focus(); });
+    distEl.addEventListener("input", () => {
+      distEl.value = distEl.value.replace(/\D/g, "");
+      updatePreview();
+      if (distEl.value.length >= 2) seriesEl.focus();
+    });
+    seriesEl.addEventListener("input", () => {
+      seriesEl.value = seriesEl.value.toUpperCase().replace(/[^A-Z]/g, "");
+      updatePreview();
+      if (seriesEl.value.length >= 2) numEl.focus();
+    });
+    numEl.addEventListener("input", () => { numEl.value = numEl.value.replace(/\D/g, "").slice(0, 4); updatePreview(); });
     [stateEl, distEl, seriesEl, numEl].forEach((el) => el.addEventListener("focus", () => scrollFieldIntoView(el)));
 
     document.getElementById("wizard-next-btn").addEventListener("click", () => {
@@ -502,6 +526,7 @@ async function finishWizard() {
 =================================================================== */
 async function loadDealerData(session) {
   DEALER_SESSION = session;
+  CURRENT_GARAGE = "own";
   await loadCars();
 }
 
@@ -519,13 +544,29 @@ async function loadCars() {
   document.getElementById("stat-listings").textContent = ALL_CARS.length;
   document.getElementById("stat-available").textContent = ALL_CARS.filter((c) => c.status === "available").length;
   document.getElementById("stat-sold").textContent = ALL_CARS.filter((c) => c.status === "sold").length;
-  renderCars(ALL_CARS);
+  if (CURRENT_GARAGE === "own") renderCars(ALL_CARS, false);
 }
 
-function renderCars(list) {
+async function loadMasterCars() {
+  const grid = document.getElementById("cars-grid");
+  grid.innerHTML = `<div class="empty-row">Loading the master garage…</div>`;
+
+  const { data, error } = await window.db.rpc("dealer_list_all_cars", { p_dealer_id: DEALER_SESSION.id });
+  if (error) {
+    console.error(error);
+    grid.innerHTML = `<div class="empty-row">${escapeHtml(friendlyError(error))}</div>`;
+    return;
+  }
+  MASTER_CARS = data || [];
+  renderCars(MASTER_CARS, true);
+}
+
+function renderCars(list, isMaster) {
   const grid = document.getElementById("cars-grid");
   if (!list.length) {
-    grid.innerHTML = `<div class="empty-row">No cars listed yet. Add your first car to build your lot.</div>`;
+    grid.innerHTML = isMaster
+      ? `<div class="empty-row">No listings across the network yet.</div>`
+      : `<div class="empty-row">No cars listed yet. Add your first car to build your lot.</div>`;
     return;
   }
   grid.innerHTML = list
@@ -538,6 +579,7 @@ function renderCars(list) {
       </div>
       <div class="car-card__body">
         <h3>${escapeHtml(c.year || "")} ${escapeHtml(c.make)} ${escapeHtml(c.model)}</h3>
+        ${isMaster ? `<div class="dealer-tag">${escapeHtml(c.dealer_shop || c.dealer_name || "Dealer")}</div>` : ""}
         <div class="car-card__price">${formatCurrency(c.price)} ${c.price_type ? `<span style="color:var(--text-faint);font-size:0.78rem;">(${escapeHtml(c.price_type)})</span>` : ""}</div>
         <div class="car-card__meta">
           <span>${formatKm(c.km_driven)}</span>
@@ -548,17 +590,23 @@ function renderCars(list) {
           <span>${escapeHtml(boardTypeLabel(c.board_type))}</span>
           <span>${c.owners_count ? c.owners_count + " owner(s)" : "—"}</span>
         </div>
-        <div class="car-card__actions">
+        ${
+          isMaster
+            ? ""
+            : `<div class="car-card__actions">
           <button class="btn btn--ghost btn--sm" data-action="edit" data-id="${c.id}">Edit</button>
           <button class="btn btn--ghost btn--sm" data-action="toggle" data-id="${c.id}" data-status="${c.status}">
             Mark ${c.status === "available" ? "sold" : "available"}
           </button>
           <button class="btn btn--danger btn--sm" data-action="delete" data-id="${c.id}">Delete</button>
-        </div>
+        </div>`
+        }
       </div>
     </article>`
     )
     .join("");
+
+  if (isMaster) return; // read-only view, no action wiring needed
 
   grid.querySelectorAll('[data-action="edit"]').forEach((btn) =>
     btn.addEventListener("click", () => {
@@ -623,14 +671,17 @@ function renderCars(list) {
 function filterCars(query, status) {
   const q = (query || "").trim().toLowerCase();
   const activeStatus = status || document.querySelector(".status-filter.active")?.dataset.status || "all";
-  let list = ALL_CARS;
+  const isMaster = CURRENT_GARAGE === "master";
+  let list = isMaster ? MASTER_CARS : ALL_CARS;
   if (activeStatus !== "all") list = list.filter((c) => c.status === activeStatus);
   if (q) {
     list = list.filter((c) =>
-      [c.make, c.model, c.car_number, c.fuel_type].filter(Boolean).some((v) => v.toLowerCase().includes(q))
+      [c.make, c.model, c.car_number, c.fuel_type, isMaster ? c.dealer_shop : null, isMaster ? c.dealer_name : null]
+        .filter(Boolean)
+        .some((v) => v.toLowerCase().includes(q))
     );
   }
-  renderCars(list);
+  renderCars(list, isMaster);
 }
 
 function boardTypeLabel(v) {
