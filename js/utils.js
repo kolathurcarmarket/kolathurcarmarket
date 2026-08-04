@@ -107,6 +107,10 @@ function switchView(name) {
 
 function logout() {
   clearSession();
+  if (typeof notifPollInterval !== "undefined" && notifPollInterval) {
+    clearInterval(notifPollInterval);
+    notifPollInterval = null;
+  }
   switchView("login");
   document.getElementById("form-login")?.reset();
 }
