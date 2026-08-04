@@ -170,6 +170,11 @@
         <button class="btn btn--primary" id="btn-open-add-car">+ Add a car</button>
       </div>
 
+      <div class="garage-tabs" role="tablist" aria-label="Choose garage view">
+        <button class="garage-tab active" data-garage="own" role="tab" aria-selected="true">Own Garage</button>
+        <button class="garage-tab" data-garage="master" role="tab" aria-selected="false">Master Garage</button>
+      </div>
+
       <section class="stats-row" style="grid-template-columns:repeat(3,1fr);">
         <div class="stat-card"><div class="label">Total listings</div><div class="value" id="stat-listings">0</div></div>
         <div class="stat-card"><div class="label">Available</div><div class="value" id="stat-available">0</div></div>
