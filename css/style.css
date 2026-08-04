@@ -774,6 +774,25 @@ table.data-table {
   color: var(--amber-strong);
 }
 
+/* Icon-style choice buttons (owner count uses person silhouettes) */
+.wizard-choice--icon {
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 84px;
+}
+.wizard-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-muted);
+}
+.wizard-choice.selected .wizard-icon-row { color: var(--amber-strong); }
+.wizard-icon-plus {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
 /* Radio-style choice (used for the 4-way plate type question) */
 .wizard-radio-list { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.2rem; }
 .wizard-radio {
