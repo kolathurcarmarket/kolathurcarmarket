@@ -81,6 +81,14 @@ function wireDealerView() {
   document.querySelectorAll("#car-modal [data-close-modal]").forEach((el) =>
     el.addEventListener("click", () => document.getElementById("car-modal").classList.remove("open"))
   );
+  document.querySelectorAll("#detail-modal [data-close-modal]").forEach((el) =>
+    el.addEventListener("click", () => document.getElementById("detail-modal").classList.remove("open"))
+  );
+  document.querySelectorAll("#search-modal [data-close-modal]").forEach((el) =>
+    el.addEventListener("click", () => document.getElementById("search-modal").classList.remove("open"))
+  );
+
+  document.getElementById("btn-master-search").addEventListener("click", () => openSearchWizard());
 
   document.getElementById("car-search").addEventListener(
     "input",
@@ -101,13 +109,21 @@ function wireDealerView() {
       btn.classList.add("active");
       CURRENT_GARAGE = btn.dataset.garage;
       document.getElementById("btn-open-add-car").style.display = CURRENT_GARAGE === "own" ? "" : "none";
+      document.getElementById("btn-master-search").style.display = CURRENT_GARAGE === "master" ? "" : "none";
       if (CURRENT_GARAGE === "master") {
         await loadMasterCars();
       } else {
+        updateStatsFromList(ALL_CARS);
         renderCars(ALL_CARS, false);
       }
     });
   });
+}
+
+function updateStatsFromList(list) {
+  document.getElementById("stat-listings").textContent = list.length;
+  document.getElementById("stat-available").textContent = list.filter((c) => c.status === "available").length;
+  document.getElementById("stat-sold").textContent = list.filter((c) => c.status === "sold").length;
 }
 
 /* -------------------- Wizard: open / navigate -------------------- */
@@ -541,9 +557,7 @@ async function loadCars() {
     return;
   }
   ALL_CARS = data || [];
-  document.getElementById("stat-listings").textContent = ALL_CARS.length;
-  document.getElementById("stat-available").textContent = ALL_CARS.filter((c) => c.status === "available").length;
-  document.getElementById("stat-sold").textContent = ALL_CARS.filter((c) => c.status === "sold").length;
+  updateStatsFromList(ALL_CARS);
   if (CURRENT_GARAGE === "own") renderCars(ALL_CARS, false);
 }
 
@@ -558,6 +572,7 @@ async function loadMasterCars() {
     return;
   }
   MASTER_CARS = data || [];
+  updateStatsFromList(MASTER_CARS);
   renderCars(MASTER_CARS, true);
 }
 
@@ -605,6 +620,15 @@ function renderCars(list, isMaster) {
     </article>`
     )
     .join("");
+
+  grid.querySelectorAll(".car-card").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      const source = isMaster ? MASTER_CARS : ALL_CARS;
+      const car = source.find((c) => c.id === card.dataset.id);
+      if (car) openCarDetail(car, isMaster);
+    });
+  });
 
   if (isMaster) return; // read-only view, no action wiring needed
 
@@ -687,6 +711,162 @@ function filterCars(query, status) {
 function boardTypeLabel(v) {
   const opt = BOARD_TYPES.find((o) => o.value === v);
   return opt ? opt.label : "—";
+}
+
+/* ===================================================================
+   Full-page car detail view
+=================================================================== */
+function insuranceLabel(v) {
+  if (!v) return "—";
+  try { return new Date(v).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return v; }
+}
+
+function openCarDetail(car, isMaster) {
+  document.getElementById("detail-modal-title").textContent = `${car.year || ""} ${car.make} ${car.model}`.trim();
+  const boardClass = "board-" + (car.board_type || "own");
+
+  const rows = [
+    ["Car number", car.car_number || "—"],
+    ["Plate type", boardTypeLabel(car.board_type)],
+    ["Owners", car.owners_count ? car.owners_count + " owner(s)" : "—"],
+    ["Insurance valid till", insuranceLabel(car.insurance_validity)],
+    ["Kilometers driven", formatKm(car.km_driven)],
+    ["Fuel type", car.fuel_type || "—"],
+    ["Transmission", car.transmission || "—"],
+    ["Status", car.status || "—"],
+  ];
+
+  document.getElementById("detail-modal-body").innerHTML = `
+    <div class="detail-plate">
+      <span class="board-picker-plate ${boardClass}" style="min-width:200px;">
+        <span class="board-picker-plate__text" style="font-size:1.1rem;">${escapeHtml(car.car_number || "—")}</span>
+      </span>
+    </div>
+    <div class="detail-price">
+      ${formatCurrency(car.price)} ${car.price_type ? `<span>(${escapeHtml(car.price_type)})</span>` : ""}
+    </div>
+    ${
+      isMaster
+        ? `<div class="detail-dealer">Listed by <strong>${escapeHtml(car.dealer_shop || car.dealer_name || "a dealer")}</strong></div>`
+        : ""
+    }
+    <div class="detail-grid">
+      ${rows
+        .map((r) => `<div class="detail-row"><div class="dr-label">${escapeHtml(r[0])}</div><div class="dr-value">${escapeHtml(String(r[1]))}</div></div>`)
+        .join("")}
+    </div>
+    ${
+      isMaster
+        ? ""
+        : `<button type="button" class="btn btn--primary btn--block" id="detail-edit-btn">Edit this listing</button>`
+    }
+  `;
+
+  if (!isMaster) {
+    document.getElementById("detail-edit-btn").addEventListener("click", () => {
+      document.getElementById("detail-modal").classList.remove("open");
+      startCarWizard(car);
+    });
+  }
+
+  document.getElementById("detail-modal").classList.add("open");
+}
+
+/* ===================================================================
+   Master Garage — search by budget + precise filters
+=================================================================== */
+const BUDGET_MIN = 5000;
+const BUDGET_MAX = 2000000; // shown as "20L+"
+
+function formatBudgetLabel(v) {
+  if (v >= BUDGET_MAX) return "₹20,00,000+";
+  return formatCurrency(v);
+}
+
+function openSearchWizard() {
+  renderSearchStep1();
+  document.getElementById("search-modal").classList.add("open");
+}
+
+function renderSearchStep1() {
+  const body = document.getElementById("search-modal-body");
+  const startVal = 500000;
+  body.innerHTML = `
+    <div class="wizard-question">What's your budget?</div>
+    <div class="budget-display" id="budget-display">${formatBudgetLabel(startVal)}</div>
+    <div class="budget-sub">Move the slider to set the maximum you'd like to pay</div>
+    <div class="vertical-slider-wrap">
+      <input type="range" id="budget-slider" class="vertical-slider" min="${BUDGET_MIN}" max="${BUDGET_MAX}" step="5000" value="${startVal}" />
+    </div>
+    <div class="wizard-nav">
+      <button type="button" class="btn btn--primary btn--block" id="budget-next-btn">Next: Filters</button>
+    </div>
+  `;
+  const slider = document.getElementById("budget-slider");
+  const display = document.getElementById("budget-display");
+  slider.addEventListener("input", () => { display.textContent = formatBudgetLabel(Number(slider.value)); });
+  document.getElementById("budget-next-btn").addEventListener("click", () => {
+    renderSearchStep2(Number(slider.value));
+  });
+}
+
+function uniqueValues(list, key) {
+  return [...new Set(list.map((c) => c[key]).filter(Boolean))];
+}
+
+function renderSearchStep2(budget) {
+  const body = document.getElementById("search-modal-body");
+  const makes = uniqueValues(MASTER_CARS, "make");
+  const fuels = uniqueValues(MASTER_CARS, "fuel_type");
+  const transmissions = uniqueValues(MASTER_CARS, "transmission");
+
+  const checkGroup = (title, name, values, labelFn) => `
+    <div class="filter-group">
+      <h4>${escapeHtml(title)}</h4>
+      <div class="filter-check-list">
+        ${values
+          .map(
+            (v) => `<label class="filter-check"><input type="checkbox" name="${name}" value="${escapeHtml(String(v))}" />${escapeHtml(labelFn ? labelFn(v) : v)}</label>`
+          )
+          .join("")}
+      </div>
+    </div>`;
+
+  body.innerHTML = `
+    <div class="wizard-question">Narrow it down</div>
+    <div class="budget-sub">Budget up to ${formatBudgetLabel(budget)} — pick anything else that matters, or leave it blank to see all.</div>
+    ${checkGroup("Make", "f-make", makes)}
+    ${checkGroup("Fuel type", "f-fuel", fuels)}
+    ${checkGroup("Transmission", "f-trans", transmissions)}
+    ${checkGroup("Plate type", "f-board", BOARD_TYPES.map((o) => o.value), (v) => boardTypeLabel(v))}
+    <div class="wizard-nav">
+      <button type="button" class="wizard-back" id="search-back-btn">← Back</button>
+      <button type="button" class="btn btn--primary" id="search-apply-btn">Show results</button>
+    </div>
+  `;
+
+  document.getElementById("search-back-btn").addEventListener("click", () => renderSearchStep1());
+  document.getElementById("search-apply-btn").addEventListener("click", () => applySearchFilters(budget));
+}
+
+function applySearchFilters(budget) {
+  const body = document.getElementById("search-modal-body");
+  const checked = (name) => [...body.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
+  const makes = checked("f-make");
+  const fuels = checked("f-fuel");
+  const transmissions = checked("f-trans");
+  const boards = checked("f-board");
+
+  let results = MASTER_CARS.filter((c) => (c.price || 0) <= budget);
+  if (makes.length) results = results.filter((c) => makes.includes(c.make));
+  if (fuels.length) results = results.filter((c) => fuels.includes(c.fuel_type));
+  if (transmissions.length) results = results.filter((c) => transmissions.includes(c.transmission));
+  if (boards.length) results = results.filter((c) => boards.includes(c.board_type));
+
+  document.getElementById("search-modal").classList.remove("open");
+  renderCars(results, true);
+  toast(`${results.length} car${results.length === 1 ? "" : "s"} match your search.`, "success");
 }
 
 function hydrateDealerHeader(session) {
