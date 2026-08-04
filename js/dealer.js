@@ -3,20 +3,27 @@ let ALL_CARS = [];
 
 /* ===================================================================
    ADD-A-CAR WIZARD — one question per screen, big touch targets.
-   Order: car number -> board type -> owners -> insurance ->
-   make -> model -> year -> km -> fuel -> transmission -> price -> review
+   Order: board type -> car number (plate builder) -> owners ->
+   insurance -> make -> model -> year -> km -> fuel -> transmission ->
+   price -> review
 =================================================================== */
+const INDIAN_STATE_CODES = [
+  "AN","AP","AR","AS","BR","CH","CG","DD","DL","DN","GA","GJ","HR","HP",
+  "JK","JH","KA","KL","LA","LD","MP","MH","MN","ML","MZ","NL","OD","PY",
+  "PB","RJ","SK","TN","TS","TR","UP","UK","WB",
+];
+
 const WIZARD_STEPS = [
-  {
-    key: "car_number", type: "text", title: "What is the car number?",
-    placeholder: "e.g. TN01AB1234", hint: "Type the vehicle registration number.",
-  },
   {
     key: "board_type", type: "choice", title: "Commercial or own board?",
     options: [
-      { value: "commercial", label: "Commercial board" },
-      { value: "own", label: "Own board" },
+      { value: "commercial", label: "Commercial board (yellow)" },
+      { value: "own", label: "Own board (white)" },
     ],
+  },
+  {
+    key: "car_number", type: "plate", title: "What is the car number?",
+    hint: "Pick the state, then fill in the rest — like on the actual plate.",
   },
   {
     key: "owners_count", type: "choice", title: "How many owners so far?",
@@ -57,6 +64,7 @@ const WIZARD_STEPS = [
 ];
 
 let wizardData = {};
+let wizardPlate = { state: "", dist: "", series: "", num: "" };
 let wizardStep = 0;
 let wizardCarId = null;
 
@@ -102,10 +110,17 @@ function startCarWizard(car = null) {
         status: car.status || "available",
       }
     : {};
+  wizardPlate = parsePlate(wizardData.car_number || "");
   wizardStep = car ? WIZARD_STEPS.length - 1 : 0; // editing: jump straight to review
   document.getElementById("car-modal-title").textContent = car ? "Edit listing" : "Add a car";
   document.getElementById("car-modal").classList.add("open");
   renderWizardStep();
+}
+
+function parsePlate(str) {
+  // Best-effort split of "TN 58 BA 7555" style strings back into parts.
+  const parts = (str || "").toUpperCase().replace(/[^A-Z0-9]/g, " ").split(/\s+/).filter(Boolean);
+  return { state: parts[0] || "", dist: parts[1] || "", series: parts[2] || "", num: parts[3] || "" };
 }
 
 function goToStep(i) {
@@ -117,6 +132,12 @@ function goNext() {
 }
 function goBack() {
   if (wizardStep > 0) goToStep(wizardStep - 1);
+}
+
+/** Scrolls a freshly-focused field into view once the mobile keyboard
+ *  finishes animating in, so the input never ends up hidden behind it. */
+function scrollFieldIntoView(el) {
+  setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
 }
 
 function displayValueForStep(step, data) {
@@ -169,6 +190,76 @@ function renderWizardStep() {
         setTimeout(goNext, 180);
       });
     });
+  } else if (step.type === "plate") {
+    const boardClass = wizardData.board_type === "commercial" ? "board-commercial" : "board-own";
+    body.innerHTML = `
+      <div class="wizard-step-count">Step ${wizardStep + 1} of ${WIZARD_STEPS.length}</div>
+      <div class="wizard-question">${escapeHtml(step.title)}</div>
+      ${step.hint ? `<div class="wizard-hint" style="margin-top:-0.8rem;margin-bottom:1rem;">${escapeHtml(step.hint)}</div>` : ""}
+
+      <div class="plate-preview ${boardClass}" id="plate-preview">
+        <span class="plate-preview__strip"><span>IND</span></span>
+        <span class="plate-preview__text">
+          <span id="pp-state">${escapeHtml(wizardPlate.state || "ST")}</span
+          ><span id="pp-dist">${escapeHtml(wizardPlate.dist || "00")}</span
+          ><span id="pp-series">${escapeHtml(wizardPlate.series || "AA")}</span
+          ><span id="pp-num">${escapeHtml(wizardPlate.num || "0000")}</span>
+        </span>
+      </div>
+
+      <div class="plate-fields">
+        <div class="plate-field plate-field--state">
+          <label for="plate-state">State</label>
+          <select id="plate-state" class="wizard-input">
+            <option value="">Select</option>
+            ${INDIAN_STATE_CODES.map((c) => `<option value="${c}" ${wizardPlate.state === c ? "selected" : ""}>${c}</option>`).join("")}
+          </select>
+        </div>
+        <div class="plate-field plate-field--dist">
+          <label for="plate-dist">District no.</label>
+          <input class="wizard-input" id="plate-dist" type="text" inputmode="numeric" maxlength="2" placeholder="58" value="${escapeHtml(wizardPlate.dist)}" />
+        </div>
+        <div class="plate-field plate-field--series">
+          <label for="plate-series">Series</label>
+          <input class="wizard-input" id="plate-series" type="text" maxlength="2" placeholder="BA" value="${escapeHtml(wizardPlate.series)}" style="text-transform:uppercase;" />
+        </div>
+        <div class="plate-field plate-field--num">
+          <label for="plate-num">Number</label>
+          <input class="wizard-input" id="plate-num" type="text" inputmode="numeric" maxlength="4" placeholder="7555" value="${escapeHtml(wizardPlate.num)}" />
+        </div>
+      </div>
+      <p class="form-error" id="wizard-error" role="alert"></p>
+      <div class="wizard-nav">${backBtn}<button type="button" class="btn btn--primary" id="wizard-next-btn">Next</button></div>
+    `;
+
+    const stateEl = document.getElementById("plate-state");
+    const distEl = document.getElementById("plate-dist");
+    const seriesEl = document.getElementById("plate-series");
+    const numEl = document.getElementById("plate-num");
+
+    const updatePreview = () => {
+      document.getElementById("pp-state").textContent = stateEl.value || "ST";
+      document.getElementById("pp-dist").textContent = distEl.value || "00";
+      document.getElementById("pp-series").textContent = seriesEl.value || "AA";
+      document.getElementById("pp-num").textContent = numEl.value || "0000";
+    };
+    stateEl.addEventListener("change", updatePreview);
+    distEl.addEventListener("input", () => { distEl.value = distEl.value.replace(/\D/g, ""); updatePreview(); });
+    seriesEl.addEventListener("input", () => { seriesEl.value = seriesEl.value.toUpperCase().replace(/[^A-Z]/g, ""); updatePreview(); });
+    numEl.addEventListener("input", () => { numEl.value = numEl.value.replace(/\D/g, ""); updatePreview(); });
+    [stateEl, distEl, seriesEl, numEl].forEach((el) => el.addEventListener("focus", () => scrollFieldIntoView(el)));
+
+    document.getElementById("wizard-next-btn").addEventListener("click", () => {
+      const errorEl = document.getElementById("wizard-error");
+      errorEl.textContent = "";
+      if (!stateEl.value || !distEl.value || !seriesEl.value || !numEl.value) {
+        errorEl.textContent = "Please fill in every box of the number plate.";
+        return;
+      }
+      wizardPlate = { state: stateEl.value, dist: distEl.value, series: seriesEl.value, num: numEl.value };
+      wizardData.car_number = `${wizardPlate.state} ${wizardPlate.dist} ${wizardPlate.series} ${wizardPlate.num}`;
+      goNext();
+    });
   } else if (step.type === "text" || step.type === "number" || step.type === "date") {
     const inputType = step.type === "text" ? "text" : step.type === "number" ? "number" : "date";
     body.innerHTML = `
@@ -184,6 +275,7 @@ function renderWizardStep() {
     `;
     const input = document.getElementById("wizard-field");
     input.focus();
+    input.addEventListener("focus", () => scrollFieldIntoView(input));
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); handleWizardNext(step); } });
     document.getElementById("wizard-next-btn").addEventListener("click", () => handleWizardNext(step));
   } else if (step.type === "price") {
@@ -201,7 +293,9 @@ function renderWizardStep() {
       </div>
       <div class="wizard-nav">${backBtn}<button type="button" class="btn btn--primary" id="wizard-next-btn">Next</button></div>
     `;
-    document.getElementById("wizard-field").focus();
+    const input = document.getElementById("wizard-field");
+    input.focus();
+    input.addEventListener("focus", () => scrollFieldIntoView(input));
     body.querySelectorAll(".wizard-price-type .wizard-choice").forEach((btn) => {
       btn.addEventListener("click", () => {
         wizardData.price_type = btn.dataset.value;
