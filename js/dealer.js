@@ -125,6 +125,25 @@ function wireDealerView() {
       }
     });
   });
+
+  document.getElementById("notif-bell").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const panel = document.getElementById("notif-panel");
+    const opening = !panel.classList.contains("open");
+    panel.classList.toggle("open");
+    if (opening) {
+      renderNotifPanel();
+      localStorage.setItem(notifStorageKey(DEALER_SESSION.id), new Date().toISOString());
+      document.getElementById("notif-count").style.display = "none";
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const wrap = document.getElementById("notif-bell-wrap");
+    const panel = document.getElementById("notif-panel");
+    if (panel.classList.contains("open") && !wrap.contains(e.target)) {
+      panel.classList.remove("open");
+    }
+  });
 }
 
 function updateStatsFromList(list) {
@@ -551,6 +570,9 @@ async function loadDealerData(session) {
   DEALER_SESSION = session;
   CURRENT_GARAGE = "own";
   await loadCars();
+  await refreshNotifBadge();
+  if (notifPollInterval) clearInterval(notifPollInterval);
+  notifPollInterval = setInterval(refreshNotifBadge, 60000);
 }
 
 async function loadCars() {
@@ -937,4 +959,64 @@ function hydrateDealerHeader(session) {
   document.getElementById("dealer-current-username").textContent = session.fullName || session.username;
   document.getElementById("dealer-current-shop").textContent = session.shopName || "";
   document.getElementById("dealer-avatar-initials").textContent = initials(session.fullName || session.username);
+}
+
+/* ===================================================================
+   Notification bell — new listings from other dealers, and bookings
+   on your own cars. Polled every 60s; unread state kept in
+   localStorage per dealer so the badge survives a page reload.
+=================================================================== */
+let notifPollInterval = null;
+let NOTIF_CACHE = [];
+
+function notifStorageKey(dealerId) {
+  return `scd_notif_seen_${dealerId}`;
+}
+
+async function refreshNotifBadge() {
+  if (!DEALER_SESSION) return;
+  const { data, error } = await window.db.rpc("dealer_notifications", {
+    p_dealer_id: DEALER_SESSION.id,
+    p_limit: 30,
+  });
+  if (error) {
+    console.error(error);
+    return;
+  }
+  NOTIF_CACHE = data || [];
+  const lastSeen = localStorage.getItem(notifStorageKey(DEALER_SESSION.id)) || "1970-01-01T00:00:00Z";
+  const unread = NOTIF_CACHE.filter((n) => new Date(n.created_at) > new Date(lastSeen)).length;
+  const countEl = document.getElementById("notif-count");
+  if (unread > 0) {
+    countEl.textContent = unread > 9 ? "9+" : String(unread);
+    countEl.style.display = "";
+  } else {
+    countEl.style.display = "none";
+  }
+}
+
+function timeAgo(iso) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return mins + "m ago";
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + "h ago";
+  const days = Math.floor(hrs / 24);
+  return days + "d ago";
+}
+
+function renderNotifPanel() {
+  const panel = document.getElementById("notif-panel");
+  if (!NOTIF_CACHE.length) {
+    panel.innerHTML = `<div class="notif-empty">No updates yet.</div>`;
+    return;
+  }
+  panel.innerHTML = NOTIF_CACHE.map((n) => {
+    const text =
+      n.kind === "booking"
+        ? `<strong>${escapeHtml(n.actor_name)}</strong> booked your <strong>${escapeHtml(n.car_label)}</strong>`
+        : `<strong>${escapeHtml(n.actor_name)}</strong> listed a new car — <strong>${escapeHtml(n.car_label)}</strong>`;
+    return `<div class="notif-item">${text}<div class="notif-time">${timeAgo(n.created_at)}</div></div>`;
+  }).join("");
 }
