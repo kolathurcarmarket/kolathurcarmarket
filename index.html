@@ -233,33 +233,13 @@
 </div>
 
 <div class="modal-backdrop" id="car-modal">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="car-modal-title">
+  <div class="modal modal--wizard" role="dialog" aria-modal="true" aria-labelledby="car-modal-title">
     <div class="modal-head">
       <h2 id="car-modal-title">Add a car</h2>
       <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
     </div>
-    <form id="form-car" novalidate>
-      <div class="form-grid">
-        <div class="field"><label for="car-make">Make</label><input type="text" id="car-make" placeholder="e.g. Maruti Suzuki" required /></div>
-        <div class="field"><label for="car-model">Model</label><input type="text" id="car-model" placeholder="e.g. Swift" required /></div>
-        <div class="field"><label for="car-year">Year</label><input type="number" id="car-year" min="1980" max="2100" placeholder="2019" /></div>
-        <div class="field"><label for="car-price">Price (₹)</label><input type="number" id="car-price" min="0" placeholder="450000" /></div>
-        <div class="field"><label for="car-km">Kilometers driven</label><input type="number" id="car-km" min="0" placeholder="42000" /></div>
-        <div class="field"><label for="car-color">Color</label><input type="text" id="car-color" placeholder="e.g. Pearl White" /></div>
-        <div class="field">
-          <label for="car-fuel">Fuel type</label>
-          <select id="car-fuel"><option>Petrol</option><option>Diesel</option><option>CNG</option><option>Electric</option><option>Hybrid</option></select>
-        </div>
-        <div class="field">
-          <label for="car-trans">Transmission</label>
-          <select id="car-trans"><option>Manual</option><option>Automatic</option></select>
-        </div>
-        <div class="field field--full"><label for="car-image">Photo URL</label><input type="url" id="car-image" placeholder="https://…" /></div>
-        <div class="field field--full"><label for="car-desc">Description</label><textarea id="car-desc" placeholder="Condition, service history, extra features…"></textarea></div>
-      </div>
-      <p class="form-error" id="car-form-error" role="alert"></p>
-      <button type="submit" class="btn btn--primary btn--block" id="btn-save-car">Save listing</button>
-    </form>
+    <div class="wizard-progress" id="wizard-progress"></div>
+    <div class="wizard-body" id="wizard-body"></div>
   </div>
 </div>
 
