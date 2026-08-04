@@ -706,6 +706,134 @@ table.data-table {
 .toast--error { border-left-color: var(--red); }
 
 /* ---------------------------------------------------------------
+   Add-a-car wizard — one big question per screen, large touch targets
+------------------------------------------------------------------ */
+.modal--wizard { max-width: 480px; }
+
+.wizard-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 1.4rem;
+}
+.wizard-progress .dot {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  transition: background 0.2s;
+}
+.wizard-progress .dot.done { background: var(--amber); }
+.wizard-progress .dot.current { background: var(--amber-strong); }
+
+.wizard-step-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.wizard-question {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  margin-bottom: 1.4rem;
+}
+
+.wizard-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 1.4rem;
+}
+.wizard-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 64px;
+  padding: 0.9rem 1.2rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.wizard-choice:active { transform: scale(0.98); }
+.wizard-choice:hover { border-color: var(--amber-dim); }
+.wizard-choice.selected {
+  border-color: var(--amber);
+  background: rgba(240, 166, 58, 0.12);
+  color: var(--amber-strong);
+}
+
+.wizard-input-wrap { margin-bottom: 1.4rem; }
+.wizard-input {
+  width: 100%;
+  font-size: 1.3rem;
+  padding: 1.1rem 1rem;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-family: var(--font-body);
+  text-align: center;
+}
+.wizard-input:focus { border-color: var(--amber); outline: none; box-shadow: 0 0 0 3px rgba(240,166,58,0.15); }
+.wizard-hint { text-align: center; color: var(--text-faint); font-size: 0.85rem; margin-top: 0.6rem; }
+
+.wizard-price-type {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+.wizard-price-type .wizard-choice { flex: 1; min-height: 52px; font-size: 1rem; }
+
+.wizard-nav {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.wizard-back {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+}
+.wizard-back:hover { color: var(--amber); }
+.wizard-nav .btn--primary { flex: 1; padding: 1rem; font-size: 1.05rem; }
+
+.wizard-review-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.4rem; }
+.wizard-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.wizard-review-row .rr-label { font-size: 0.78rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+.wizard-review-row .rr-value { font-weight: 600; font-size: 0.98rem; }
+.wizard-review-row .rr-edit {
+  background: none; border: none; color: var(--amber);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .wizard-question { font-size: 1.2rem; }
+  .wizard-choice { min-height: 58px; font-size: 1.05rem; }
+  .wizard-input { font-size: 1.15rem; }
+}
+
+/* ---------------------------------------------------------------
    Responsive breakpoints
 ------------------------------------------------------------------ */
 @media (max-width: 980px) {
