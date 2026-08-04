@@ -896,6 +896,96 @@ table.data-table {
   .board-picker-plate__text { font-size: 0.8rem; }
 }
 
+/* Master Garage — big search button */
+.btn--search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.1rem;
+  font-size: 1.05rem;
+  margin-bottom: 1.1rem;
+}
+
+/* Vertical budget slider */
+.budget-display {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  color: var(--amber-strong);
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+.budget-sub { text-align: center; color: var(--text-faint); font-size: 0.8rem; margin-bottom: 1.4rem; }
+.vertical-slider-wrap {
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0 1.6rem;
+}
+.vertical-slider {
+  width: 200px;
+  transform: rotate(-90deg);
+  accent-color: var(--amber);
+  height: 8px;
+  cursor: pointer;
+}
+
+/* Search filter checkbox groups */
+.filter-group { margin-bottom: 1.2rem; }
+.filter-group h4 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 0.6rem;
+}
+.filter-check-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.filter-check input { accent-color: var(--amber); width: 16px; height: 16px; }
+.filter-check:has(input:checked) { border-color: var(--amber); background: rgba(240,166,58,0.1); color: var(--amber-strong); }
+
+/* Full car-detail view */
+.detail-plate { display: flex; justify-content: center; margin-bottom: 1.2rem; }
+.detail-price { text-align: center; font-family: var(--font-mono); color: var(--amber-strong); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem; }
+.detail-price span { color: var(--text-faint); font-size: 0.85rem; font-weight: 500; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 1.4rem; }
+.detail-row {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.8rem;
+}
+.detail-row .dr-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 0.25rem; }
+.detail-row .dr-value { font-weight: 600; font-size: 0.92rem; }
+.detail-dealer {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem;
+  text-align: center;
+  margin-bottom: 1.2rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.car-card { cursor: pointer; }
+
+@media (max-width: 480px) {
+  .detail-grid { grid-template-columns: 1fr; }
+}
+
 .wizard-input-wrap { margin-bottom: 1.4rem; }
 .wizard-input {
   width: 100%;
