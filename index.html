@@ -181,6 +181,11 @@
         <div class="stat-card"><div class="label">Sold</div><div class="value" id="stat-sold">0</div></div>
       </section>
 
+      <button class="btn btn--primary btn--block btn--search" id="btn-master-search" style="display:none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search car by budget
+      </button>
+
       <div class="toolbar">
         <div class="filter-chips">
           <button class="status-filter active" data-status="all">All</button>
@@ -196,6 +201,28 @@
     </main>
   </div>
 </section>
+
+<!-- ============================= CAR DETAIL MODAL ============================= -->
+<div class="modal-backdrop" id="detail-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+    <div class="modal-head">
+      <h2 id="detail-modal-title">Car details</h2>
+      <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- ============================= BUDGET SEARCH MODAL ============================= -->
+<div class="modal-backdrop" id="search-modal">
+  <div class="modal modal--wizard" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+    <div class="modal-head">
+      <h2 id="search-modal-title">Search car</h2>
+      <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <div id="search-modal-body"></div>
+  </div>
+</div>
 
 <!-- ============================= MODALS ============================= -->
 <div class="modal-backdrop" id="add-dealer-modal">
