@@ -13,13 +13,17 @@ const INDIAN_STATE_CODES = [
   "PB","RJ","SK","TN","TS","TR","UP","UK","WB",
 ];
 
+const BOARD_TYPES = [
+  { value: "own", label: "White board — Own (Petrol/Diesel)", swatch: "own" },
+  { value: "commercial", label: "Yellow board — Commercial (Petrol/Diesel)", swatch: "commercial" },
+  { value: "own_ev", label: "Green board, white letters — Own EV", swatch: "own_ev" },
+  { value: "commercial_ev", label: "Green board, yellow letters — Commercial EV", swatch: "commercial_ev" },
+];
+
 const WIZARD_STEPS = [
   {
-    key: "board_type", type: "choice", title: "Commercial or own board?",
-    options: [
-      { value: "commercial", label: "Commercial board (yellow)" },
-      { value: "own", label: "Own board (white)" },
-    ],
+    key: "board_type", type: "radio", title: "Which type of number plate does this car have?",
+    options: BOARD_TYPES,
   },
   {
     key: "car_number", type: "plate", title: "What is the car number?",
@@ -110,7 +114,7 @@ function startCarWizard(car = null) {
         status: car.status || "available",
       }
     : {};
-  wizardPlate = parsePlate(wizardData.car_number || "");
+  wizardPlate = car ? parsePlate(wizardData.car_number || "") : { state: "TN", dist: "", series: "", num: "" };
   wizardStep = car ? WIZARD_STEPS.length - 1 : 0; // editing: jump straight to review
   document.getElementById("car-modal-title").textContent = car ? "Edit listing" : "Add a car";
   document.getElementById("car-modal").classList.add("open");
@@ -143,7 +147,7 @@ function scrollFieldIntoView(el) {
 function displayValueForStep(step, data) {
   const v = data[step.key];
   if (v === undefined || v === null || v === "") return "—";
-  if (step.type === "choice") {
+  if (step.type === "choice" || step.type === "radio") {
     const opt = step.options.find((o) => String(o.value) === String(v));
     return opt ? opt.label : v;
   }
@@ -190,8 +194,43 @@ function renderWizardStep() {
         setTimeout(goNext, 180);
       });
     });
+  } else if (step.type === "radio") {
+    body.innerHTML = `
+      <div class="wizard-step-count">Step ${wizardStep + 1} of ${WIZARD_STEPS.length}</div>
+      <div class="wizard-question">${escapeHtml(step.title)}</div>
+      <div class="wizard-radio-list">
+        ${step.options
+          .map(
+            (o) => `
+          <label class="wizard-radio ${wizardData[step.key] === o.value ? "selected" : ""}">
+            <input type="radio" name="wizard-radio-${step.key}" value="${escapeHtml(o.value)}" ${wizardData[step.key] === o.value ? "checked" : ""} />
+            <span class="plate-swatch plate-swatch--${o.swatch}"></span>
+            <span class="wizard-radio__label">${escapeHtml(o.label)}</span>
+          </label>`
+          )
+          .join("")}
+      </div>
+      <p class="form-error" id="wizard-error" role="alert"></p>
+      <div class="wizard-nav">${backBtn}<button type="button" class="btn btn--primary" id="wizard-next-btn">Next</button></div>
+    `;
+    body.querySelectorAll(`input[name="wizard-radio-${step.key}"]`).forEach((radio) => {
+      radio.addEventListener("change", () => {
+        body.querySelectorAll(".wizard-radio").forEach((l) => l.classList.remove("selected"));
+        radio.closest(".wizard-radio").classList.add("selected");
+      });
+    });
+    document.getElementById("wizard-next-btn").addEventListener("click", () => {
+      const errorEl = document.getElementById("wizard-error");
+      const checked = body.querySelector(`input[name="wizard-radio-${step.key}"]:checked`);
+      if (!checked) {
+        errorEl.textContent = "Please choose one option.";
+        return;
+      }
+      wizardData[step.key] = checked.value;
+      goNext();
+    });
   } else if (step.type === "plate") {
-    const boardClass = wizardData.board_type === "commercial" ? "board-commercial" : "board-own";
+    const boardClass = "board-" + (wizardData.board_type || "own");
     body.innerHTML = `
       <div class="wizard-step-count">Step ${wizardStep + 1} of ${WIZARD_STEPS.length}</div>
       <div class="wizard-question">${escapeHtml(step.title)}</div>
@@ -458,7 +497,7 @@ function renderCars(list) {
           <span>${escapeHtml(c.transmission || "—")}</span>
         </div>
         <div class="car-card__meta">
-          <span>${c.board_type ? (c.board_type === "commercial" ? "Commercial" : "Own board") : "—"}</span>
+          <span>${escapeHtml(boardTypeLabel(c.board_type))}</span>
           <span>${c.owners_count ? c.owners_count + " owner(s)" : "—"}</span>
         </div>
         <div class="car-card__actions">
@@ -544,6 +583,11 @@ function filterCars(query, status) {
     );
   }
   renderCars(list);
+}
+
+function boardTypeLabel(v) {
+  const opt = BOARD_TYPES.find((o) => o.value === v);
+  return opt ? opt.label.split("—")[1]?.trim() || opt.label : "—";
 }
 
 function hydrateDealerHeader(session) {
