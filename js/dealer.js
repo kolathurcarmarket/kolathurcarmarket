@@ -14,10 +14,10 @@ const INDIAN_STATE_CODES = [
 ];
 
 const BOARD_TYPES = [
-  { value: "own", label: "White board — Own (Petrol/Diesel)", swatch: "own" },
-  { value: "commercial", label: "Yellow board — Commercial (Petrol/Diesel)", swatch: "commercial" },
-  { value: "own_ev", label: "Green board, white letters — Own EV", swatch: "own_ev" },
-  { value: "commercial_ev", label: "Green board, yellow letters — Commercial EV", swatch: "commercial_ev" },
+  { value: "own", label: "Own", swatch: "own" },
+  { value: "commercial", label: "Commercial", swatch: "commercial" },
+  { value: "own_ev", label: "EV Own", swatch: "own_ev" },
+  { value: "commercial_ev", label: "EV Commercial", swatch: "commercial_ev" },
 ];
 
 const WIZARD_STEPS = [
@@ -32,10 +32,10 @@ const WIZARD_STEPS = [
   {
     key: "owners_count", type: "choice", title: "How many owners so far?",
     options: [
-      { value: 1, label: "1st owner" },
-      { value: 2, label: "2nd owner" },
-      { value: 3, label: "3rd owner" },
-      { value: 4, label: "4th owner or more" },
+      { value: 1, label: "1st owner", icon: 1 },
+      { value: 2, label: "2nd owner", icon: 2 },
+      { value: 3, label: "3rd owner", icon: 3 },
+      { value: 4, label: "4th owner or more", icon: 4 },
     ],
   },
   {
@@ -144,6 +144,17 @@ function scrollFieldIntoView(el) {
   setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
 }
 
+/** Renders n little person silhouettes (max 3 drawn, 4th shows a "+"). */
+function personIcons(n) {
+  const person = `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>`;
+  const count = Math.min(n, 3);
+  let html = `<span class="wizard-icon-row">`;
+  for (let i = 0; i < count; i++) html += person;
+  if (n > 3) html += `<span class="wizard-icon-plus">+</span>`;
+  html += `</span>`;
+  return html;
+}
+
 function displayValueForStep(step, data) {
   const v = data[step.key];
   if (v === undefined || v === null || v === "") return "—";
@@ -182,7 +193,7 @@ function renderWizardStep() {
       <div class="wizard-choices">
         ${step.options
           .map(
-            (o) => `<button type="button" class="wizard-choice ${String(wizardData[step.key]) === String(o.value) ? "selected" : ""}" data-value="${escapeHtml(String(o.value))}">${escapeHtml(o.label)}</button>`
+            (o) => `<button type="button" class="wizard-choice ${o.icon ? "wizard-choice--icon" : ""} ${String(wizardData[step.key]) === String(o.value) ? "selected" : ""}" data-value="${escapeHtml(String(o.value))}">${o.icon ? personIcons(o.icon) : ""}<span>${escapeHtml(o.label)}</span></button>`
           )
           .join("")}
       </div>
@@ -624,7 +635,7 @@ function filterCars(query, status) {
 
 function boardTypeLabel(v) {
   const opt = BOARD_TYPES.find((o) => o.value === v);
-  return opt ? opt.label.split("—")[1]?.trim() || opt.label : "—";
+  return opt ? opt.label : "—";
 }
 
 function hydrateDealerHeader(session) {
