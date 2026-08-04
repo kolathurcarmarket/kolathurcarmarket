@@ -3,9 +3,9 @@ let ALL_CARS = [];
 
 /* ===================================================================
    ADD-A-CAR WIZARD — one question per screen, big touch targets.
-   Order: board type -> car number (plate builder) -> owners ->
-   insurance -> make -> model -> year -> km -> fuel -> transmission ->
-   price -> review
+   Order: car number (plate builder) -> board type (shown using that
+   number, in all 4 real colors) -> owners -> insurance -> make ->
+   model -> year -> km -> fuel -> transmission -> price -> review
 =================================================================== */
 const INDIAN_STATE_CODES = [
   "AN","AP","AR","AS","BR","CH","CG","DD","DL","DN","GA","GJ","HR","HP",
@@ -22,12 +22,12 @@ const BOARD_TYPES = [
 
 const WIZARD_STEPS = [
   {
-    key: "board_type", type: "radio", title: "Which type of number plate does this car have?",
-    options: BOARD_TYPES,
-  },
-  {
     key: "car_number", type: "plate", title: "What is the car number?",
     hint: "Pick the state, then fill in the rest — like on the actual plate.",
+  },
+  {
+    key: "board_type", type: "board-picker", title: "Which of these matches the car's plate?",
+    options: BOARD_TYPES,
   },
   {
     key: "owners_count", type: "choice", title: "How many owners so far?",
@@ -147,7 +147,7 @@ function scrollFieldIntoView(el) {
 function displayValueForStep(step, data) {
   const v = data[step.key];
   if (v === undefined || v === null || v === "") return "—";
-  if (step.type === "choice" || step.type === "radio") {
+  if (step.type === "choice" || step.type === "radio" || step.type === "board-picker") {
     const opt = step.options.find((o) => String(o.value) === String(v));
     return opt ? opt.label : v;
   }
@@ -193,6 +193,43 @@ function renderWizardStep() {
         wizardData[step.key] = /^\d+$/.test(btn.dataset.value) ? Number(btn.dataset.value) : btn.dataset.value;
         setTimeout(goNext, 180);
       });
+    });
+  } else if (step.type === "board-picker") {
+    body.innerHTML = `
+      <div class="wizard-step-count">Step ${wizardStep + 1} of ${WIZARD_STEPS.length}</div>
+      <div class="wizard-question">${escapeHtml(step.title)}</div>
+      <div class="board-picker-list">
+        ${step.options
+          .map(
+            (o) => `
+          <label class="board-picker-card ${wizardData.board_type === o.value ? "selected" : ""}">
+            <input type="radio" name="wizard-board-type" value="${escapeHtml(o.value)}" ${wizardData.board_type === o.value ? "checked" : ""} />
+            <span class="board-picker-plate board-${o.value}">
+              <span class="board-picker-plate__text">${escapeHtml(wizardData.car_number || "TN 00 AA 0000")}</span>
+            </span>
+            <span class="board-picker-label">${escapeHtml(o.label)}</span>
+          </label>`
+          )
+          .join("")}
+      </div>
+      <p class="form-error" id="wizard-error" role="alert"></p>
+      <div class="wizard-nav">${backBtn}<button type="button" class="btn btn--primary" id="wizard-next-btn">Next</button></div>
+    `;
+    body.querySelectorAll('input[name="wizard-board-type"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        body.querySelectorAll(".board-picker-card").forEach((l) => l.classList.remove("selected"));
+        radio.closest(".board-picker-card").classList.add("selected");
+      });
+    });
+    document.getElementById("wizard-next-btn").addEventListener("click", () => {
+      const errorEl = document.getElementById("wizard-error");
+      const checked = body.querySelector('input[name="wizard-board-type"]:checked');
+      if (!checked) {
+        errorEl.textContent = "Please choose the plate that matches this car.";
+        return;
+      }
+      wizardData.board_type = checked.value;
+      goNext();
     });
   } else if (step.type === "radio") {
     body.innerHTML = `
