@@ -90,6 +90,13 @@ function wireDealerView() {
 
   document.getElementById("btn-master-search").addEventListener("click", () => openSearchWizard());
 
+  document.getElementById("btn-clear-filter").addEventListener("click", () => {
+    document.getElementById("car-search").value = "";
+    document.querySelectorAll(".status-filter").forEach((b) => b.classList.remove("active"));
+    document.querySelector('.status-filter[data-status="all"]').classList.add("active");
+    renderCars(MASTER_CARS, true);
+  });
+
   document.getElementById("car-search").addEventListener(
     "input",
     debounce((e) => filterCars(e.target.value), 200)
@@ -109,7 +116,7 @@ function wireDealerView() {
       btn.classList.add("active");
       CURRENT_GARAGE = btn.dataset.garage;
       document.getElementById("btn-open-add-car").style.display = CURRENT_GARAGE === "own" ? "" : "none";
-      document.getElementById("btn-master-search").style.display = CURRENT_GARAGE === "master" ? "" : "none";
+      document.getElementById("master-actions-row").style.display = CURRENT_GARAGE === "master" ? "" : "none";
       if (CURRENT_GARAGE === "master") {
         await loadMasterCars();
       } else {
@@ -607,7 +614,12 @@ function renderCars(list, isMaster) {
         </div>
         ${
           isMaster
-            ? ""
+            ? `<div class="car-card__actions">
+          <button class="btn ${c.booked_by_me ? "btn--ghost" : "btn--primary"} btn--sm" data-action="book" data-id="${c.id}" ${c.booked_by_me ? "disabled" : ""}>
+            ${c.booked_by_me ? "Booked ✓" : "Book"}
+          </button>
+          <span class="booking-badge" data-badge-for="${c.id}" title="Dealers who booked this car">${c.booking_count || 0}</span>
+        </div>`
             : `<div class="car-card__actions">
           <button class="btn btn--ghost btn--sm" data-action="edit" data-id="${c.id}">Edit</button>
           <button class="btn btn--ghost btn--sm" data-action="toggle" data-id="${c.id}" data-status="${c.status}">
@@ -630,7 +642,42 @@ function renderCars(list, isMaster) {
     });
   });
 
-  if (isMaster) return; // read-only view, no action wiring needed
+  if (isMaster) {
+    grid.querySelectorAll('[data-action="book"]').forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        if (btn.dataset.busy === "1") return; // duplicate-click guard
+        btn.dataset.busy = "1";
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "…";
+
+        const car = MASTER_CARS.find((c) => c.id === btn.dataset.id);
+        const { error } = await window.db.rpc("dealer_book_car", {
+          p_dealer_id: DEALER_SESSION.id,
+          p_car_id: car.id,
+        });
+
+        btn.dataset.busy = "0";
+        if (error) {
+          btn.disabled = false;
+          btn.textContent = originalText;
+          toast(friendlyError(error), "error");
+          return;
+        }
+
+        car.booking_count = (car.booking_count || 0) + 1;
+        car.booked_by_me = true;
+        const badge = grid.querySelector(`[data-badge-for="${car.id}"]`);
+        if (badge) badge.textContent = car.booking_count;
+        btn.textContent = "Booked ✓";
+        btn.classList.remove("btn--primary");
+        btn.classList.add("btn--ghost");
+        // stays disabled permanently — this dealer has booked it
+        toast("You've booked this car.", "success");
+      })
+    );
+    return; // rest of the actions below are for own-garage cards only
+  }
 
   grid.querySelectorAll('[data-action="edit"]').forEach((btn) =>
     btn.addEventListener("click", () => {
@@ -756,6 +803,7 @@ function openCarDetail(car, isMaster) {
         .map((r) => `<div class="detail-row"><div class="dr-label">${escapeHtml(r[0])}</div><div class="dr-value">${escapeHtml(String(r[1]))}</div></div>`)
         .join("")}
     </div>
+    <div id="detail-bookings"></div>
     ${
       isMaster
         ? ""
@@ -771,6 +819,22 @@ function openCarDetail(car, isMaster) {
   }
 
   document.getElementById("detail-modal").classList.add("open");
+
+  // Fetch the ordered list of dealers who booked this car (if any).
+  const bookingsEl = document.getElementById("detail-bookings");
+  window.db
+    .rpc("dealer_list_car_bookings", { p_dealer_id: DEALER_SESSION.id, p_car_id: car.id })
+    .then(({ data, error }) => {
+      if (error || !data || !data.length) return;
+      bookingsEl.innerHTML = `
+        <div class="filter-group">
+          <h4>Booked by (${data.length})</h4>
+          <ol class="booking-list">
+            ${data.map((b) => `<li>${escapeHtml(b.dealer_shop || b.dealer_name || "Dealer")}</li>`).join("")}
+          </ol>
+        </div>
+      `;
+    });
 }
 
 /* ===================================================================
