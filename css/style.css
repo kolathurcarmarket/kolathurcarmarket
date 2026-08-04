@@ -774,6 +774,35 @@ table.data-table {
   color: var(--amber-strong);
 }
 
+/* Radio-style choice (used for the 4-way plate type question) */
+.wizard-radio-list { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.2rem; }
+.wizard-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wizard-radio:hover { border-color: var(--amber-dim); }
+.wizard-radio.selected { border-color: var(--amber); background: rgba(240,166,58,0.10); }
+.wizard-radio input[type="radio"] { width: 20px; height: 20px; accent-color: var(--amber); flex-shrink: 0; }
+.wizard-radio__label { font-size: 1rem; font-weight: 600; line-height: 1.3; }
+
+.plate-swatch {
+  width: 34px; height: 22px;
+  border-radius: 3px;
+  border: 2px solid #111;
+  flex-shrink: 0;
+}
+.plate-swatch--own { background: #f5f5f0; }
+.plate-swatch--commercial { background: #ffc400; }
+.plate-swatch--own_ev { background: #0a7a3d; }
+.plate-swatch--commercial_ev { background: #0a7a3d; box-shadow: inset 0 0 0 3px #ffc400; }
+
 .wizard-input-wrap { margin-bottom: 1.4rem; }
 .wizard-input {
   width: 100%;
@@ -843,6 +872,10 @@ table.data-table {
 }
 .plate-preview.board-own { background: #f5f5f0; }
 .plate-preview.board-commercial { background: #ffc400; }
+.plate-preview.board-own_ev { background: #0a7a3d; }
+.plate-preview.board-own_ev .plate-preview__text { color: #fff; }
+.plate-preview.board-commercial_ev { background: #0a7a3d; }
+.plate-preview.board-commercial_ev .plate-preview__text { color: #ffc400; }
 .plate-preview__strip {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: #1447a8; color: #fff; font-size: 0.6rem; font-weight: 700;
