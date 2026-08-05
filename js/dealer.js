@@ -44,6 +44,10 @@ const WIZARD_STEPS = [
     key: "insurance_validity", type: "date", title: "Insurance valid till?",
     hint: "Tap the box and pick the expiry date.",
   },
+  {
+    key: "fc_validity", type: "date", title: "FC (Fitness Certificate) valid till?",
+    hint: "Tap the box and pick the expiry date.",
+  },
   { key: "make", type: "text", title: "What is the car's brand (Make)?", placeholder: "e.g. Maruti Suzuki" },
   { key: "model", type: "text", title: "What is the model?", placeholder: "e.g. Swift" },
   { key: "year", type: "number", title: "Which year model?", placeholder: "e.g. 2019" },
@@ -86,6 +90,9 @@ function wireDealerView() {
   );
   document.querySelectorAll("#search-modal [data-close-modal]").forEach((el) =>
     el.addEventListener("click", () => document.getElementById("search-modal").classList.remove("open"))
+  );
+  document.querySelectorAll("#hold-modal [data-close-modal]").forEach((el) =>
+    el.addEventListener("click", () => document.getElementById("hold-modal").classList.remove("open"))
   );
 
   document.getElementById("btn-master-search").addEventListener("click", () => openSearchWizard());
@@ -171,6 +178,7 @@ function startCarWizard(car = null) {
         board_type: car.board_type || "",
         owners_count: car.owners_count || "",
         insurance_validity: car.insurance_validity || "",
+        fc_validity: car.fc_validity || "",
         make: car.make || "",
         model: car.model || "",
         year: car.year || "",
@@ -531,6 +539,7 @@ async function finishWizard() {
     p_board_type: wizardData.board_type || null,
     p_owners: wizardData.owners_count || null,
     p_insurance: wizardData.insurance_validity || null,
+    p_fc: wizardData.fc_validity || null,
     p_make: wizardData.make || null,
     p_model: wizardData.model || null,
     p_year: wizardData.year || null,
@@ -641,16 +650,15 @@ function renderCars(list, isMaster) {
         ${
           isMaster
             ? `<div class="car-card__actions">
-          <button class="btn ${c.booked_by_me ? "btn--ghost" : "btn--primary"} btn--sm" data-action="book" data-id="${c.id}" ${c.booked_by_me ? "disabled" : ""}>
-            ${c.booked_by_me ? "Booked ✓" : "Book"}
+          <button class="btn ${c.booked_by_me ? "btn--ghost" : "btn--primary"} btn--sm" data-action="${c.booked_by_me ? "cancel-book" : "book"}" data-id="${c.id}">
+            ${c.booked_by_me ? "Cancel booking" : "Book"}
           </button>
           <span class="booking-badge" data-badge-for="${c.id}" title="Dealers who booked this car">${c.booking_count || 0}</span>
         </div>`
             : `<div class="car-card__actions">
           <button class="btn btn--ghost btn--sm" data-action="edit" data-id="${c.id}">Edit</button>
-          <button class="btn btn--ghost btn--sm" data-action="toggle" data-id="${c.id}" data-status="${c.status}">
-            Mark ${c.status === "available" ? "sold" : "available"}
-          </button>
+          <button class="btn btn--ghost btn--sm" data-action="hold" data-id="${c.id}">${c.status === "hold" ? "Release hold" : "Hold"}</button>
+          <button class="btn btn--ghost btn--sm" data-action="sold" data-id="${c.id}">${c.status === "sold" ? "Mark available" : "Sold"}</button>
           <button class="btn btn--danger btn--sm" data-action="delete" data-id="${c.id}">Delete</button>
         </div>`
         }
@@ -684,8 +692,8 @@ function renderCars(list, isMaster) {
         });
 
         btn.dataset.busy = "0";
+        btn.disabled = false;
         if (error) {
-          btn.disabled = false;
           btn.textContent = originalText;
           toast(friendlyError(error), "error");
           return;
@@ -695,13 +703,48 @@ function renderCars(list, isMaster) {
         car.booked_by_me = true;
         const badge = grid.querySelector(`[data-badge-for="${car.id}"]`);
         if (badge) badge.textContent = car.booking_count;
-        btn.textContent = "Booked ✓";
+        btn.textContent = "Cancel booking";
+        btn.dataset.action = "cancel-book";
         btn.classList.remove("btn--primary");
         btn.classList.add("btn--ghost");
-        // stays disabled permanently — this dealer has booked it
         toast("You've booked this car.", "success");
       })
     );
+
+    grid.querySelectorAll('[data-action="cancel-book"]').forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        if (btn.dataset.busy === "1") return;
+        btn.dataset.busy = "1";
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "…";
+
+        const car = MASTER_CARS.find((c) => c.id === btn.dataset.id);
+        const { error } = await window.db.rpc("dealer_cancel_booking", {
+          p_dealer_id: DEALER_SESSION.id,
+          p_car_id: car.id,
+        });
+
+        btn.dataset.busy = "0";
+        btn.disabled = false;
+        if (error) {
+          btn.textContent = originalText;
+          toast(friendlyError(error), "error");
+          return;
+        }
+
+        car.booking_count = Math.max(0, (car.booking_count || 1) - 1);
+        car.booked_by_me = false;
+        const badge = grid.querySelector(`[data-badge-for="${car.id}"]`);
+        if (badge) badge.textContent = car.booking_count;
+        btn.textContent = "Book";
+        btn.dataset.action = "book";
+        btn.classList.remove("btn--ghost");
+        btn.classList.add("btn--primary");
+        toast("Booking cancelled.", "success");
+      })
+    );
+
     return; // rest of the actions below are for own-garage cards only
   }
 
@@ -712,27 +755,39 @@ function renderCars(list, isMaster) {
     })
   );
 
-  grid.querySelectorAll('[data-action="toggle"]').forEach((btn) =>
+  grid.querySelectorAll('[data-action="hold"]').forEach((btn) =>
     btn.addEventListener(
       "click",
       guardClick(btn, async () => {
         const car = ALL_CARS.find((c) => c.id === btn.dataset.id);
-        const newStatus = btn.dataset.status === "available" ? "sold" : "available";
-        const { error } = await window.db.rpc("dealer_update_car", {
+        if (car.status === "hold") {
+          const { error } = await window.db.rpc("dealer_set_car_status", {
+            p_dealer_id: DEALER_SESSION.id,
+            p_car_id: car.id,
+            p_status: "available",
+          });
+          if (error) {
+            toast(friendlyError(error), "error");
+            return;
+          }
+          toast("Hold released.", "success");
+          await loadCars();
+        } else {
+          openHoldPicker(car);
+        }
+      })
+    )
+  );
+
+  grid.querySelectorAll('[data-action="sold"]').forEach((btn) =>
+    btn.addEventListener(
+      "click",
+      guardClick(btn, async () => {
+        const car = ALL_CARS.find((c) => c.id === btn.dataset.id);
+        const newStatus = car.status === "sold" ? "available" : "sold";
+        const { error } = await window.db.rpc("dealer_set_car_status", {
           p_dealer_id: DEALER_SESSION.id,
           p_car_id: car.id,
-          p_car_number: car.car_number,
-          p_board_type: car.board_type,
-          p_owners: car.owners_count,
-          p_insurance: car.insurance_validity,
-          p_make: car.make,
-          p_model: car.model,
-          p_year: car.year,
-          p_km: car.km_driven,
-          p_fuel: car.fuel_type,
-          p_trans: car.transmission,
-          p_price: car.price,
-          p_price_type: car.price_type,
           p_status: newStatus,
         });
         if (error) {
@@ -787,6 +842,96 @@ function boardTypeLabel(v) {
 }
 
 /* ===================================================================
+   Hold picker — "Customer" or "Dealer" (then pick which dealer)
+=================================================================== */
+function openHoldPicker(car) {
+  const body = document.getElementById("hold-modal-body");
+  body.innerHTML = `
+    <div class="wizard-question">Who is this car being held for?</div>
+    <div class="wizard-choices">
+      <button type="button" class="wizard-choice" id="hold-pick-customer">Customer</button>
+      <button type="button" class="wizard-choice" id="hold-pick-dealer">Another dealer</button>
+    </div>
+  `;
+  document.getElementById("hold-modal").classList.add("open");
+
+  document.getElementById("hold-pick-customer").addEventListener(
+    "click",
+    guardClick(document.getElementById("hold-pick-customer"), async () => {
+      const { error } = await window.db.rpc("dealer_set_car_status", {
+        p_dealer_id: DEALER_SESSION.id,
+        p_car_id: car.id,
+        p_status: "hold",
+        p_hold_type: "customer",
+        p_held_by_dealer_id: null,
+      });
+      if (error) {
+        toast(friendlyError(error), "error");
+        return;
+      }
+      document.getElementById("hold-modal").classList.remove("open");
+      toast("Marked on hold for a customer.", "success");
+      await loadCars();
+    })
+  );
+
+  document.getElementById("hold-pick-dealer").addEventListener("click", async () => {
+    body.innerHTML = `<div class="wizard-question">Loading dealers…</div>`;
+    const { data, error } = await window.db.rpc("dealer_list_dealers", { p_dealer_id: DEALER_SESSION.id });
+    if (error) {
+      body.innerHTML = `<p class="form-error">${escapeHtml(friendlyError(error))}</p>`;
+      return;
+    }
+    if (!data || !data.length) {
+      body.innerHTML = `<p class="wizard-hint">No other dealers on the network yet.</p>`;
+      return;
+    }
+    body.innerHTML = `
+      <div class="wizard-question">Which dealer is holding it?</div>
+      <div class="wizard-radio-list">
+        ${data
+          .map(
+            (d) => `<label class="wizard-radio"><input type="radio" name="hold-dealer" value="${d.id}" /><span class="wizard-radio__label">${escapeHtml(d.shop_name || d.full_name)}</span></label>`
+          )
+          .join("")}
+      </div>
+      <p class="form-error" id="hold-dealer-error" role="alert"></p>
+      <button type="button" class="btn btn--primary btn--block" id="hold-dealer-confirm">Confirm</button>
+    `;
+    body.querySelectorAll('input[name="hold-dealer"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        body.querySelectorAll(".wizard-radio").forEach((l) => l.classList.remove("selected"));
+        radio.closest(".wizard-radio").classList.add("selected");
+      });
+    });
+    document.getElementById("hold-dealer-confirm").addEventListener(
+      "click",
+      guardClick(document.getElementById("hold-dealer-confirm"), async () => {
+        const checked = body.querySelector('input[name="hold-dealer"]:checked');
+        if (!checked) {
+          document.getElementById("hold-dealer-error").textContent = "Please choose a dealer.";
+          return;
+        }
+        const { error: err2 } = await window.db.rpc("dealer_set_car_status", {
+          p_dealer_id: DEALER_SESSION.id,
+          p_car_id: car.id,
+          p_status: "hold",
+          p_hold_type: "dealer",
+          p_held_by_dealer_id: checked.value,
+        });
+        if (err2) {
+          document.getElementById("hold-dealer-error").textContent = friendlyError(err2);
+          return;
+        }
+        document.getElementById("hold-modal").classList.remove("open");
+        toast("Marked on hold for that dealer.", "success");
+        await loadCars();
+      })
+    );
+  });
+}
+
+/* ===================================================================
    Full-page car detail view
 =================================================================== */
 function insuranceLabel(v) {
@@ -799,16 +944,25 @@ function openCarDetail(car, isMaster) {
   document.getElementById("detail-modal-title").textContent = `${car.year || ""} ${car.make} ${car.model}`.trim();
   const boardClass = "board-" + (car.board_type || "own");
 
+  const holdReason =
+    car.status === "hold"
+      ? car.hold_type === "dealer"
+        ? `Reserved by dealer — ${car.held_by_name || "another dealer"}`
+        : "Reserved for a customer"
+      : null;
+
   const rows = [
     ["Car number", car.car_number || "—"],
     ["Plate type", boardTypeLabel(car.board_type)],
     ["Owners", car.owners_count ? car.owners_count + " owner(s)" : "—"],
     ["Insurance valid till", insuranceLabel(car.insurance_validity)],
+    ["FC valid till", insuranceLabel(car.fc_validity)],
     ["Kilometers driven", formatKm(car.km_driven)],
     ["Fuel type", car.fuel_type || "—"],
     ["Transmission", car.transmission || "—"],
     ["Status", car.status || "—"],
   ];
+  if (isMaster && holdReason) rows.push(["Hold reason", holdReason]);
 
   document.getElementById("detail-modal-body").innerHTML = `
     <div class="detail-plate">
@@ -886,8 +1040,8 @@ function renderSearchStep1() {
     <div class="wizard-question">What's your budget?</div>
     <div class="budget-display" id="budget-display">${formatBudgetLabel(startVal)}</div>
     <div class="budget-sub">Move the slider to set the maximum you'd like to pay</div>
-    <div class="vertical-slider-wrap">
-      <input type="range" id="budget-slider" class="vertical-slider" min="${BUDGET_MIN}" max="${BUDGET_MAX}" step="5000" value="${startVal}" />
+    <div class="budget-slider-wrap">
+      <input type="range" id="budget-slider" class="budget-slider" min="${BUDGET_MIN}" max="${BUDGET_MAX}" step="5000" value="${startVal}" />
     </div>
     <div class="wizard-nav">
       <button type="button" class="btn btn--primary btn--block" id="budget-next-btn">Next: Filters</button>
@@ -908,25 +1062,35 @@ function uniqueValues(list, key) {
 function renderSearchStep2(budget) {
   const body = document.getElementById("search-modal-body");
   const makes = uniqueValues(MASTER_CARS, "make");
+  const models = uniqueValues(MASTER_CARS, "model");
   const fuels = uniqueValues(MASTER_CARS, "fuel_type");
   const transmissions = uniqueValues(MASTER_CARS, "transmission");
 
   const checkGroup = (title, name, values, labelFn) => `
-    <div class="filter-group">
-      <h4>${escapeHtml(title)}</h4>
-      <div class="filter-check-list">
-        ${values
-          .map(
-            (v) => `<label class="filter-check"><input type="checkbox" name="${name}" value="${escapeHtml(String(v))}" />${escapeHtml(labelFn ? labelFn(v) : v)}</label>`
-          )
-          .join("")}
+    <div class="filter-accordion" data-group="${name}">
+      <button type="button" class="filter-accordion__header">
+        <span>${escapeHtml(title)}</span>
+        <span class="filter-accordion__meta">
+          <span class="filter-accordion__count" data-count-for="${name}"></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </button>
+      <div class="filter-accordion__body">
+        <div class="filter-check-list">
+          ${values
+            .map(
+              (v) => `<label class="filter-check"><input type="checkbox" name="${name}" value="${escapeHtml(String(v))}" />${escapeHtml(labelFn ? labelFn(v) : v)}</label>`
+            )
+            .join("")}
+        </div>
       </div>
     </div>`;
 
   body.innerHTML = `
     <div class="wizard-question">Narrow it down</div>
-    <div class="budget-sub">Budget up to ${formatBudgetLabel(budget)} — pick anything else that matters, or leave it blank to see all.</div>
+    <div class="budget-sub">Budget up to ${formatBudgetLabel(budget)} — tap a category to pick options, or leave all blank to see everything.</div>
     ${checkGroup("Make", "f-make", makes)}
+    ${checkGroup("Model", "f-model", models)}
     ${checkGroup("Fuel type", "f-fuel", fuels)}
     ${checkGroup("Transmission", "f-trans", transmissions)}
     ${checkGroup("Plate type", "f-board", BOARD_TYPES.map((o) => o.value), (v) => boardTypeLabel(v))}
@@ -936,6 +1100,20 @@ function renderSearchStep2(budget) {
     </div>
   `;
 
+  body.querySelectorAll(".filter-accordion__header").forEach((header) => {
+    header.addEventListener("click", () => {
+      header.closest(".filter-accordion").classList.toggle("open");
+    });
+  });
+  body.querySelectorAll('.filter-check-list input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const group = cb.closest(".filter-accordion");
+      const n = group.querySelectorAll('input[type="checkbox"]:checked').length;
+      const countEl = group.querySelector(".filter-accordion__count");
+      countEl.textContent = n > 0 ? n : "";
+    });
+  });
+
   document.getElementById("search-back-btn").addEventListener("click", () => renderSearchStep1());
   document.getElementById("search-apply-btn").addEventListener("click", () => applySearchFilters(budget));
 }
@@ -944,12 +1122,14 @@ function applySearchFilters(budget) {
   const body = document.getElementById("search-modal-body");
   const checked = (name) => [...body.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
   const makes = checked("f-make");
+  const models = checked("f-model");
   const fuels = checked("f-fuel");
   const transmissions = checked("f-trans");
   const boards = checked("f-board");
 
   let results = MASTER_CARS.filter((c) => (c.price || 0) <= budget);
   if (makes.length) results = results.filter((c) => makes.includes(c.make));
+  if (models.length) results = results.filter((c) => models.includes(c.model));
   if (fuels.length) results = results.filter((c) => fuels.includes(c.fuel_type));
   if (transmissions.length) results = results.filter((c) => transmissions.includes(c.transmission));
   if (boards.length) results = results.filter((c) => boards.includes(c.board_type));
