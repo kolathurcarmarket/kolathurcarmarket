@@ -13,6 +13,11 @@ function wireLoginView() {
     });
   });
 
+  ["login-username", "login-pin"].forEach((id) => {
+    const el = document.getElementById(id);
+    el?.addEventListener("focus", () => scrollFieldIntoView(el));
+  });
+
   const form = document.getElementById("form-login");
   const btn = document.getElementById("btn-login");
 
