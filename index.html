@@ -203,6 +203,7 @@
         <div class="filter-chips">
           <button class="status-filter active" data-status="all">All</button>
           <button class="status-filter" data-status="available">Available</button>
+          <button class="status-filter" data-status="hold">Hold</button>
           <button class="status-filter" data-status="sold">Sold</button>
         </div>
         <input type="search" class="search-input" id="car-search" placeholder="Search make, model, color…" />
@@ -230,10 +231,21 @@
 <div class="modal-backdrop" id="search-modal">
   <div class="modal modal--wizard" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
     <div class="modal-head">
-      <h2 id="search-modal-title">Search car</h2>
+      <h2 id="search-modal-title">Search Cars</h2>
       <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
     </div>
     <div id="search-modal-body"></div>
+  </div>
+</div>
+
+<!-- ============================= HOLD PICKER MODAL ============================= -->
+<div class="modal-backdrop" id="hold-modal">
+  <div class="modal modal--wizard" role="dialog" aria-modal="true" aria-labelledby="hold-modal-title">
+    <div class="modal-head">
+      <h2 id="hold-modal-title">Put this car on hold</h2>
+      <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <div id="hold-modal-body"></div>
   </div>
 </div>
 
