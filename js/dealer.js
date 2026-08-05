@@ -101,7 +101,11 @@ function wireDealerView() {
     document.getElementById("car-search").value = "";
     document.querySelectorAll(".status-filter").forEach((b) => b.classList.remove("active"));
     document.querySelector('.status-filter[data-status="all"]').classList.add("active");
-    renderCars(MASTER_CARS, true);
+    renderCars(sortCarsList(MASTER_CARS), true);
+  });
+
+  document.getElementById("master-sort").addEventListener("change", () => {
+    filterCars(document.getElementById("car-search").value);
   });
 
   document.getElementById("car-search").addEventListener(
@@ -124,6 +128,7 @@ function wireDealerView() {
       CURRENT_GARAGE = btn.dataset.garage;
       document.getElementById("btn-open-add-car").style.display = CURRENT_GARAGE === "own" ? "" : "none";
       document.getElementById("master-actions-row").style.display = CURRENT_GARAGE === "master" ? "" : "none";
+      document.getElementById("master-sort").style.display = CURRENT_GARAGE === "master" ? "" : "none";
       if (CURRENT_GARAGE === "master") {
         await loadMasterCars();
       } else {
@@ -603,6 +608,15 @@ async function loadCars() {
   if (CURRENT_GARAGE === "own") renderCars(ALL_CARS, false);
 }
 
+function sortCarsList(list) {
+  const sortVal = document.getElementById("master-sort")?.value || "newest";
+  const arr = [...list];
+  if (sortVal === "price-asc") arr.sort((a, b) => (a.price || 0) - (b.price || 0));
+  else if (sortVal === "price-desc") arr.sort((a, b) => (b.price || 0) - (a.price || 0));
+  else arr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return arr;
+}
+
 async function loadMasterCars() {
   const grid = document.getElementById("cars-grid");
   grid.innerHTML = `<div class="empty-row">Loading the master garage…</div>`;
@@ -615,7 +629,7 @@ async function loadMasterCars() {
   }
   MASTER_CARS = data || [];
   updateStatsFromList(MASTER_CARS);
-  renderCars(MASTER_CARS, true);
+  renderCars(sortCarsList(MASTER_CARS), true);
 }
 
 function renderCars(list, isMaster) {
@@ -833,6 +847,7 @@ function filterCars(query, status) {
         .some((v) => v.toLowerCase().includes(q))
     );
   }
+  if (isMaster) list = sortCarsList(list);
   renderCars(list, isMaster);
 }
 
@@ -986,7 +1001,9 @@ function openCarDetail(car, isMaster) {
     <div id="detail-bookings"></div>
     ${
       isMaster
-        ? ""
+        ? car.dealer_phone
+          ? `<a class="btn btn--primary btn--block" href="tel:${escapeHtml(car.dealer_phone)}" style="text-decoration:none;">📞 Call ${escapeHtml(car.dealer_shop || car.dealer_name || "dealer")}</a>`
+          : ""
         : `<button type="button" class="btn btn--primary btn--block" id="detail-edit-btn">Edit this listing</button>`
     }
   `;
@@ -1135,7 +1152,7 @@ function applySearchFilters(budget) {
   if (boards.length) results = results.filter((c) => boards.includes(c.board_type));
 
   document.getElementById("search-modal").classList.remove("open");
-  renderCars(results, true);
+  renderCars(sortCarsList(results), true);
   toast(`${results.length} car${results.length === 1 ? "" : "s"} match your search.`, "success");
 }
 
@@ -1200,6 +1217,8 @@ function renderNotifPanel() {
     const text =
       n.kind === "booking"
         ? `<strong>${escapeHtml(n.actor_name)}</strong> booked your <strong>${escapeHtml(n.car_label)}</strong>`
+        : n.kind === "held_for_you"
+        ? `<strong>${escapeHtml(n.actor_name)}</strong> held <strong>${escapeHtml(n.car_label)}</strong> for you`
         : `<strong>${escapeHtml(n.actor_name)}</strong> listed a new car — <strong>${escapeHtml(n.car_label)}</strong>`;
     return `<div class="notif-item">${text}<div class="notif-time">${timeAgo(n.created_at)}</div></div>`;
   }).join("");
