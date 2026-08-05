@@ -128,13 +128,23 @@ function wireDealerView() {
 
   document.getElementById("notif-bell").addEventListener("click", (e) => {
     e.stopPropagation();
+    const bell = document.getElementById("notif-bell");
     const panel = document.getElementById("notif-panel");
     const opening = !panel.classList.contains("open");
-    panel.classList.toggle("open");
     if (opening) {
+      const rect = bell.getBoundingClientRect();
+      const panelWidth = Math.min(320, window.innerWidth - 24);
+      let left = rect.right - panelWidth;
+      left = Math.max(12, Math.min(left, window.innerWidth - panelWidth - 12));
+      panel.style.width = panelWidth + "px";
+      panel.style.top = rect.bottom + 8 + "px";
+      panel.style.left = left + "px";
+      panel.classList.add("open");
       renderNotifPanel();
       localStorage.setItem(notifStorageKey(DEALER_SESSION.id), new Date().toISOString());
       document.getElementById("notif-count").style.display = "none";
+    } else {
+      panel.classList.remove("open");
     }
   });
   document.addEventListener("click", (e) => {
@@ -194,12 +204,6 @@ function goNext() {
 }
 function goBack() {
   if (wizardStep > 0) goToStep(wizardStep - 1);
-}
-
-/** Scrolls a freshly-focused field into view once the mobile keyboard
- *  finishes animating in, so the input never ends up hidden behind it. */
-function scrollFieldIntoView(el) {
-  setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
 }
 
 /** Renders n little person silhouettes (max 3 drawn, 4th shows a "+"). */
