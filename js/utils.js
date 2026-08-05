@@ -155,6 +155,12 @@ function friendlyError(error) {
   return error.message || "Something went wrong. Try again.";
 }
 
+/** Scrolls a freshly-focused field into view once the mobile keyboard
+ *  finishes animating in, so the input never ends up hidden behind it. */
+function scrollFieldIntoView(el) {
+  setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+}
+
 function escapeHtml(str = "") {
   return String(str).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
