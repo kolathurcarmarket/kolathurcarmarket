@@ -94,6 +94,9 @@ function wireDealerView() {
   document.querySelectorAll("#hold-modal [data-close-modal]").forEach((el) =>
     el.addEventListener("click", () => document.getElementById("hold-modal").classList.remove("open"))
   );
+  document.querySelectorAll("#share-modal [data-close-modal]").forEach((el) =>
+    el.addEventListener("click", () => document.getElementById("share-modal").classList.remove("open"))
+  );
 
   document.getElementById("btn-master-search").addEventListener("click", () => openSearchWizard());
 
@@ -646,6 +649,9 @@ function renderCars(list, isMaster) {
     <article class="car-card" data-id="${c.id}">
       <div class="car-card__media">
         <span class="car-card__placeholder">${escapeHtml(c.car_number || "No number")}</span>
+        <button type="button" class="icon-btn card-share-btn" data-action="share" data-id="${c.id}" aria-label="Share on WhatsApp">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+        </button>
         <span class="status-pill status-pill--${c.status}">${escapeHtml(c.status)}</span>
       </div>
       <div class="car-card__body">
@@ -689,6 +695,15 @@ function renderCars(list, isMaster) {
       if (car) openCarDetail(car, isMaster);
     });
   });
+
+  grid.querySelectorAll('[data-action="share"]').forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const source = isMaster ? MASTER_CARS : ALL_CARS;
+      const car = source.find((c) => c.id === btn.dataset.id);
+      if (car) openShareModal(car);
+    })
+  );
 
   if (isMaster) {
     grid.querySelectorAll('[data-action="book"]').forEach((btn) =>
@@ -859,6 +874,73 @@ function boardTypeLabel(v) {
 /* ===================================================================
    Hold picker — "Customer" or "Dealer" (then pick which dealer)
 =================================================================== */
+/* ===================================================================
+   WhatsApp share — "Existing" (contacts/groups picker) or "New"
+   (type a number, opens that chat directly)
+=================================================================== */
+function buildShareText(car) {
+  const lines = [
+    `🚗 ${[car.year, car.make, car.model].filter(Boolean).join(" ")}`,
+    car.car_number ? `📋 ${car.car_number}` : null,
+    `💰 ${formatCurrency(car.price)}${car.price_type ? ` (${car.price_type})` : ""}`,
+    `🛣️ ${formatKm(car.km_driven)}${car.fuel_type ? ` | ${car.fuel_type}` : ""}${car.transmission ? ` | ${car.transmission}` : ""}`,
+    car.owners_count ? `👤 ${car.owners_count} owner(s)` : null,
+    car.board_type ? `🪪 ${boardTypeLabel(car.board_type)}` : null,
+    "",
+    `${car.dealer_shop || car.dealer_name || (DEALER_SESSION && (DEALER_SESSION.shopName || DEALER_SESSION.fullName)) || "DriveDesk"}`,
+  ];
+  return lines.filter((l) => l !== null).join("\n");
+}
+
+function openShareModal(car) {
+  const body = document.getElementById("share-modal-body");
+  body.innerHTML = `
+    <div class="wizard-question">Share this car on WhatsApp</div>
+    <div class="wizard-choices">
+      <button type="button" class="wizard-choice" id="share-existing-btn">Share to contacts/groups</button>
+      <button type="button" class="wizard-choice" id="share-new-btn">Send to a number</button>
+    </div>
+  `;
+  document.getElementById("share-modal").classList.add("open");
+
+  document.getElementById("share-existing-btn").addEventListener("click", () => {
+    const text = encodeURIComponent(buildShareText(car));
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+    document.getElementById("share-modal").classList.remove("open");
+  });
+
+  document.getElementById("share-new-btn").addEventListener("click", () => {
+    body.innerHTML = `
+      <div class="wizard-question">Enter the phone number</div>
+      <div class="field">
+        <label for="share-number">10-digit mobile number</label>
+        <div class="plate-input-wrap">
+          <span class="plate-flag">+91</span>
+          <input type="tel" id="share-number" inputmode="numeric" maxlength="10" placeholder="98765 43210" style="text-transform:none;letter-spacing:0.05em;" />
+        </div>
+      </div>
+      <p class="form-error" id="share-number-error" role="alert"></p>
+      <button type="button" class="btn btn--primary btn--block" id="share-send-btn">Send</button>
+    `;
+    const numInput = document.getElementById("share-number");
+    numInput.addEventListener("input", () => { numInput.value = numInput.value.replace(/\D/g, "").slice(0, 10); });
+    numInput.addEventListener("focus", () => scrollFieldIntoView(numInput));
+    numInput.focus();
+
+    document.getElementById("share-send-btn").addEventListener("click", () => {
+      const errorEl = document.getElementById("share-number-error");
+      const num = numInput.value.trim();
+      if (!/^\d{10}$/.test(num)) {
+        errorEl.textContent = "Enter a valid 10-digit mobile number.";
+        return;
+      }
+      const text = encodeURIComponent(buildShareText(car));
+      window.open(`https://wa.me/91${num}?text=${text}`, "_blank");
+      document.getElementById("share-modal").classList.remove("open");
+    });
+  });
+}
+
 function openHoldPicker(car) {
   const body = document.getElementById("hold-modal-body");
   body.innerHTML = `
@@ -999,6 +1081,10 @@ function openCarDetail(car, isMaster) {
         .join("")}
     </div>
     <div id="detail-bookings"></div>
+    <button type="button" class="btn btn--ghost btn--block" id="detail-share-btn" style="margin-bottom:0.6rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:0.4rem;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+      Share on WhatsApp
+    </button>
     ${
       isMaster
         ? car.dealer_phone
@@ -1007,6 +1093,8 @@ function openCarDetail(car, isMaster) {
         : `<button type="button" class="btn btn--primary btn--block" id="detail-edit-btn">Edit this listing</button>`
     }
   `;
+
+  document.getElementById("detail-share-btn").addEventListener("click", () => openShareModal(car));
 
   if (!isMaster) {
     document.getElementById("detail-edit-btn").addEventListener("click", () => {
