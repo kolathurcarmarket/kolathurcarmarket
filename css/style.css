@@ -636,6 +636,17 @@ table.data-table {
   padding: 0.6rem;
   position: relative;
 }
+.card-share-btn {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  width: 30px;
+  height: 30px;
+  z-index: 2;
+  background: rgba(14,16,19,0.75);
+  border-color: rgba(255,255,255,0.15);
+}
+.card-share-btn:hover { color: #25D366; border-color: #25D366; }
 .car-card__placeholder {
   position: absolute;
   inset: 0;
