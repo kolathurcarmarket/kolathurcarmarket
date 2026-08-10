@@ -1017,6 +1017,52 @@ table.data-table {
 
 .car-card { cursor: pointer; }
 
+/* Accounts tab — monthly ledger table */
+.accounts-table-wrap { overflow-x: auto; }
+.accounts-table { width: 100%; border-collapse: collapse; min-width: 520px; }
+.accounts-table th {
+  text-align: right;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface-2);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--amber-dim);
+  white-space: nowrap;
+}
+.accounts-table th:first-child { text-align: left; }
+.accounts-table td {
+  padding: 0.75rem 1.1rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border-soft);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.accounts-table td:first-child {
+  text-align: left;
+  font-family: var(--font-body);
+  white-space: normal;
+}
+.accounts-sub { color: var(--text-muted); font-size: 0.85rem; padding-left: 1.4rem; display: inline-block; }
+.accounts-row--section td { font-weight: 700; }
+.accounts-row--header-label td:first-child {
+  font-weight: 700;
+  padding-top: 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.accounts-row--income td { background: rgba(62,213,152,0.06); }
+.accounts-row--expense td { background: rgba(240,166,58,0.05); }
+.accounts-row--total td { background: rgba(229,83,75,0.09); }
+.accounts-row--profit td { background: rgba(240,166,58,0.1); }
+
+@media (max-width: 480px) {
+  .accounts-table td, .accounts-table th { padding: 0.6rem 0.7rem; font-size: 0.82rem; }
+}
+
 /* Notification bell */
 .notif-wrap { position: relative; }
 .icon-btn {
