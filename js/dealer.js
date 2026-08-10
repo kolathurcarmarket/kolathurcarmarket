@@ -879,26 +879,18 @@ function boardTypeLabel(v) {
    (type a number, opens that chat directly)
 =================================================================== */
 function buildShareText(car) {
-  const carEmoji = "\u{1F697}"; // 🚗
-  const numberEmoji = "\u{1F522}"; // 🔢
-  const coinEmoji = "\u{1FA99}"; // 🪙
-  const gaugeEmoji = "\u{1F4CF}"; // 📏
-  const fuelEmoji = "\u{26FD}"; // ⛽
-  const gearEmoji = "\u{2699}\u{FE0F}"; // ⚙️
-  const ownerEmoji = "\u{1F9D1}\u{200D}\u{1F9D2}\u{200D}\u{1F9D2}"; // 🧑‍🧒‍🧒
-  const idCardEmoji = "\u{1FAAA}"; // 🪪
-  const boardEmoji = "\u{1F194}"; // 🆔
-
+  const title = `*${[car.year, car.make, car.model].filter(Boolean).join(" ")}*`;
   const lines = [
-    `${carEmoji} ${[car.year, car.make, car.model].filter(Boolean).join(" ")}`,
-    car.car_number ? `${numberEmoji} ${car.car_number}` : null,
-    car.board_type ? `${boardEmoji} ${boardTypeLabel(car.board_type)} Board` : null,
-    `${coinEmoji} ${formatCurrency(car.price)}${car.price_type ? ` (${car.price_type})` : ""}`,
-    `${gaugeEmoji} ${formatKm(car.km_driven)}`,
-    car.fuel_type ? `${fuelEmoji} ${car.fuel_type}` : null,
-    car.transmission ? `${gearEmoji} ${car.transmission}` : null,
-    car.owners_count ? `${ownerEmoji} ${car.owners_count} owner(s)` : null,
-    car.insurance_validity ? `${idCardEmoji} Insurance valid till ${insuranceLabel(car.insurance_validity)}` : null,
+    title,
+    car.car_number || null,
+    car.board_type ? `${boardTypeLabel(car.board_type)} Board` : null,
+    `${formatCurrency(car.price)}${car.price_type ? ` (${car.price_type})` : ""}`,
+    formatKm(car.km_driven),
+    car.fuel_type || null,
+    car.transmission || null,
+    car.owners_count ? `${car.owners_count} owner(s)` : null,
+    car.insurance_validity ? `Insurance valid till ${insuranceLabel(car.insurance_validity)}` : null,
+    car.fc_validity ? `FC valid till ${insuranceLabel(car.fc_validity)}` : null,
   ];
   return lines.filter((l) => l !== null).join("\n");
 }
