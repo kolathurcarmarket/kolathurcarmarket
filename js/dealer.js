@@ -129,11 +129,17 @@ function wireDealerView() {
       document.querySelectorAll(".garage-tab").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       CURRENT_GARAGE = btn.dataset.garage;
+
+      document.getElementById("car-listing-view").style.display = CURRENT_GARAGE === "accounts" ? "none" : "";
+      document.getElementById("accounts-view").style.display = CURRENT_GARAGE === "accounts" ? "" : "none";
       document.getElementById("btn-open-add-car").style.display = CURRENT_GARAGE === "own" ? "" : "none";
       document.getElementById("master-actions-row").style.display = CURRENT_GARAGE === "master" ? "" : "none";
       document.getElementById("master-sort").style.display = CURRENT_GARAGE === "master" ? "" : "none";
+
       if (CURRENT_GARAGE === "master") {
         await loadMasterCars();
+      } else if (CURRENT_GARAGE === "accounts") {
+        renderAccountsPlaceholder();
       } else {
         updateStatsFromList(ALL_CARS);
         renderCars(ALL_CARS, false);
