@@ -879,15 +879,32 @@ function boardTypeLabel(v) {
    (type a number, opens that chat directly)
 =================================================================== */
 function buildShareText(car) {
+  const carEmoji = "\u{1F697}"; // 🚗
+  const tagEmoji = "\u{1F3F7}"; // 🏷️ (label, no variation selector)
+  const moneyEmoji = "\u{1F4B0}"; // 💰
+  const gaugeEmoji = "\u{1F4CF}"; // 📏
+  const fuelEmoji = "\u{26FD}"; // ⛽
+  const gearEmoji = "\u{2699}"; // ⚙
+  const personEmoji = "\u{1F464}"; // 👤
+  const boardEmoji = "\u{1F194}"; // 🆔
+  const calendarEmoji = "\u{1F4C5}"; // 📅
+  const shieldEmoji = "\u{1F6E1}"; // 🛡
+  const checkEmoji = "\u{2705}"; // ✅
+  const shopEmoji = "\u{1F3EA}"; // 🏪
+
   const lines = [
-    `🚗 ${[car.year, car.make, car.model].filter(Boolean).join(" ")}`,
-    car.car_number ? `📋 ${car.car_number}` : null,
-    `💰 ${formatCurrency(car.price)}${car.price_type ? ` (${car.price_type})` : ""}`,
-    `🛣️ ${formatKm(car.km_driven)}${car.fuel_type ? ` | ${car.fuel_type}` : ""}${car.transmission ? ` | ${car.transmission}` : ""}`,
-    car.owners_count ? `👤 ${car.owners_count} owner(s)` : null,
-    car.board_type ? `🪪 ${boardTypeLabel(car.board_type)}` : null,
+    `${carEmoji} ${[car.year, car.make, car.model].filter(Boolean).join(" ")}`,
+    car.car_number ? `${tagEmoji} ${car.car_number}` : null,
+    `${moneyEmoji} ${formatCurrency(car.price)}${car.price_type ? ` (${car.price_type})` : ""}`,
+    `${gaugeEmoji} ${formatKm(car.km_driven)}`,
+    car.fuel_type ? `${fuelEmoji} ${car.fuel_type}` : null,
+    car.transmission ? `${gearEmoji} ${car.transmission}` : null,
+    car.owners_count ? `${personEmoji} ${car.owners_count} owner(s)` : null,
+    car.board_type ? `${boardEmoji} ${boardTypeLabel(car.board_type)}` : null,
+    car.insurance_validity ? `${shieldEmoji} Insurance valid till ${insuranceLabel(car.insurance_validity)}` : null,
+    car.fc_validity ? `${checkEmoji} FC valid till ${insuranceLabel(car.fc_validity)}` : null,
     "",
-    `${car.dealer_shop || car.dealer_name || (DEALER_SESSION && (DEALER_SESSION.shopName || DEALER_SESSION.fullName)) || "DriveDesk"}`,
+    `${shopEmoji} ${car.dealer_shop || car.dealer_name || (DEALER_SESSION && (DEALER_SESSION.shopName || DEALER_SESSION.fullName)) || "DriveDesk"}`,
   ];
   return lines.filter((l) => l !== null).join("\n");
 }
