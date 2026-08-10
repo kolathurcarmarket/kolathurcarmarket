@@ -94,6 +94,9 @@ function wireDealerView() {
   document.querySelectorAll("#hold-modal [data-close-modal]").forEach((el) =>
     el.addEventListener("click", () => document.getElementById("hold-modal").classList.remove("open"))
   );
+  document.querySelectorAll("#sold-modal [data-close-modal]").forEach((el) =>
+    el.addEventListener("click", () => document.getElementById("sold-modal").classList.remove("open"))
+  );
   document.querySelectorAll("#share-modal [data-close-modal]").forEach((el) =>
     el.addEventListener("click", () => document.getElementById("share-modal").classList.remove("open"))
   );
@@ -139,7 +142,7 @@ function wireDealerView() {
       if (CURRENT_GARAGE === "master") {
         await loadMasterCars();
       } else if (CURRENT_GARAGE === "accounts") {
-        renderAccountsPlaceholder();
+        renderAccountsView();
       } else {
         updateStatsFromList(ALL_CARS);
         renderCars(ALL_CARS, false);
@@ -819,18 +822,21 @@ function renderCars(list, isMaster) {
       "click",
       guardClick(btn, async () => {
         const car = ALL_CARS.find((c) => c.id === btn.dataset.id);
-        const newStatus = car.status === "sold" ? "available" : "sold";
-        const { error } = await window.db.rpc("dealer_set_car_status", {
-          p_dealer_id: DEALER_SESSION.id,
-          p_car_id: car.id,
-          p_status: newStatus,
-        });
-        if (error) {
-          toast(friendlyError(error), "error");
-          return;
+        if (car.status === "sold") {
+          const { error } = await window.db.rpc("dealer_set_car_status", {
+            p_dealer_id: DEALER_SESSION.id,
+            p_car_id: car.id,
+            p_status: "available",
+          });
+          if (error) {
+            toast(friendlyError(error), "error");
+            return;
+          }
+          toast("Listing updated.", "success");
+          await loadCars();
+        } else {
+          openSoldWizard(car);
         }
-        toast("Listing updated.", "success");
-        await loadCars();
       })
     )
   );
@@ -948,6 +954,62 @@ function openShareModal(car) {
       document.getElementById("share-modal").classList.remove("open");
     });
   });
+}
+
+/* ===================================================================
+   Sold wizard — 3 optional questions, then marks the car sold and
+   records the entry (Accounts -> Entries).
+=================================================================== */
+function openSoldWizard(car) {
+  const body = document.getElementById("sold-modal-body");
+  body.innerHTML = `
+    <div class="wizard-question">Sale details</div>
+    <div class="wizard-hint" style="margin-top:-0.8rem;margin-bottom:1rem;">All optional — leave blank if you don't want to record it.</div>
+    <div class="field">
+      <label for="sold-amount">Total sale amount (₹)</label>
+      <input type="number" id="sold-amount" class="wizard-input" style="text-align:left;font-size:1rem;padding:0.75rem 0.9rem;" placeholder="e.g. 55000" />
+    </div>
+    <div class="field">
+      <label for="sold-seller-comm">Commission from car owner / other dealer (₹)</label>
+      <input type="number" id="sold-seller-comm" class="wizard-input" style="text-align:left;font-size:1rem;padding:0.75rem 0.9rem;" placeholder="e.g. 2000" />
+    </div>
+    <div class="field">
+      <label for="sold-buyer-comm">Commission from buyer (₹)</label>
+      <input type="number" id="sold-buyer-comm" class="wizard-input" style="text-align:left;font-size:1rem;padding:0.75rem 0.9rem;" placeholder="e.g. 1500" />
+    </div>
+    <p class="form-error" id="sold-error" role="alert"></p>
+    <button type="button" class="btn btn--primary btn--block" id="sold-confirm-btn">Confirm sold</button>
+  `;
+  document.getElementById("sold-modal").classList.add("open");
+
+  ["sold-amount", "sold-seller-comm", "sold-buyer-comm"].forEach((id) => {
+    const el = document.getElementById(id);
+    el.addEventListener("focus", () => scrollFieldIntoView(el));
+  });
+
+  document.getElementById("sold-confirm-btn").addEventListener(
+    "click",
+    guardClick(document.getElementById("sold-confirm-btn"), async () => {
+      const num = (id) => {
+        const v = document.getElementById(id).value.trim();
+        return v === "" ? null : Number(v);
+      };
+      const { error } = await window.db.rpc("dealer_mark_sold", {
+        p_dealer_id: DEALER_SESSION.id,
+        p_car_id: car.id,
+        p_sale_amount: num("sold-amount"),
+        p_seller_commission: num("sold-seller-comm"),
+        p_buyer_commission: num("sold-buyer-comm"),
+      });
+      if (error) {
+        document.getElementById("sold-error").textContent = friendlyError(error);
+        return;
+      }
+      document.getElementById("sold-modal").classList.remove("open");
+      toast("Marked as sold.", "success");
+      await loadCars();
+    })
+  );
 }
 
 function openHoldPicker(car) {
