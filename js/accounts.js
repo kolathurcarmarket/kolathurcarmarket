@@ -1,15 +1,112 @@
 /**
- * "Accounts" tab — monthly income / expense ledger.
+ * "Accounts" tab — two sub-tabs:
+ *   1. Entries          — real sale records (car + sale amount + the
+ *                          two commissions + earning), newest first.
+ *   2. Profit and Loss  — monthly ledger. Still a UI placeholder;
+ *                          real numbers get wired in once the P&L
+ *                          calculation rules are defined.
  *
- * This is the UI shell only: table structure + styling, matching the
- * layout the dealer asked for. Every value is a placeholder ("–") for
- * now — real numbers get wired in once the calculation rules
- * (what counts as Sales, COGS, which expense goes where, etc.) are
- * defined. Kept in its own file so wiring it up later doesn't mean
- * touching dealer.js.
+ * Kept in its own file so this can keep growing without touching
+ * dealer.js.
  */
 
-const ACCOUNTS_MONTHS_BACK = 2; // how many month columns to show
+let ACCOUNTS_SUBTAB = "entries"; // "entries" | "pnl"
+let SALES_ENTRIES = [];
+
+function renderAccountsView() {
+  const host = document.getElementById("accounts-view");
+  host.innerHTML = `
+    <div class="page-head" style="margin-bottom:1rem;">
+      <div>
+        <h1>Accounts</h1>
+        <p>Sale entries and monthly profit &amp; loss.</p>
+      </div>
+    </div>
+    <div class="garage-tabs" style="margin-bottom:1.2rem;" role="tablist" aria-label="Choose accounts view">
+      <button class="garage-tab ${ACCOUNTS_SUBTAB === "entries" ? "active" : ""}" data-subtab="entries" role="tab">Entries</button>
+      <button class="garage-tab ${ACCOUNTS_SUBTAB === "pnl" ? "active" : ""}" data-subtab="pnl" role="tab">Profit and Loss</button>
+    </div>
+    <div id="accounts-subtab-body"></div>
+  `;
+
+  host.querySelectorAll("[data-subtab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ACCOUNTS_SUBTAB = btn.dataset.subtab;
+      renderAccountsView();
+    });
+  });
+
+  if (ACCOUNTS_SUBTAB === "entries") {
+    loadAndRenderEntries();
+  } else {
+    renderProfitLossTable();
+  }
+}
+
+/* ===================================================================
+   Entries — real sale records
+=================================================================== */
+async function loadAndRenderEntries() {
+  const body = document.getElementById("accounts-subtab-body");
+  body.innerHTML = `<div class="empty-row">Loading entries…</div>`;
+
+  const { data, error } = await window.db.rpc("dealer_list_sales", { p_dealer_id: DEALER_SESSION.id });
+  if (error) {
+    console.error(error);
+    body.innerHTML = `<div class="empty-row">${escapeHtml(friendlyError(error))}</div>`;
+    return;
+  }
+  SALES_ENTRIES = data || [];
+  renderEntriesTable(SALES_ENTRIES);
+}
+
+function renderEntriesTable(list) {
+  const body = document.getElementById("accounts-subtab-body");
+  if (!list.length) {
+    body.innerHTML = `<div class="empty-row">No sales recorded yet. Mark a car "Sold" from Own Garage to add an entry here.</div>`;
+    return;
+  }
+
+  const rows = list
+    .map(
+      (s) => `
+    <tr>
+      <td style="text-align:left;">${escapeHtml(insuranceLabel(s.sold_at))}</td>
+      <td style="text-align:left;">
+        ${escapeHtml([s.year, s.make, s.model].filter(Boolean).join(" "))}
+        <div class="accounts-sub" style="padding-left:0;">${escapeHtml(s.car_number || "")}</div>
+      </td>
+      <td>${formatCurrency(s.sale_amount)}</td>
+      <td>${formatCurrency(s.seller_commission)}</td>
+      <td>${formatCurrency(s.buyer_commission)}</td>
+      <td><strong>${formatCurrency(s.total_earning)}</strong></td>
+    </tr>`
+    )
+    .join("");
+
+  body.innerHTML = `
+    <div class="panel accounts-table-wrap">
+      <table class="accounts-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Date</th>
+            <th style="text-align:left;">Car</th>
+            <th>Sale amount</th>
+            <th>Seller commission</th>
+            <th>Buyer commission</th>
+            <th>Earning</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ===================================================================
+   Profit and Loss — monthly ledger (placeholder, values wired later)
+=================================================================== */
+const ACCOUNTS_MONTHS_BACK = 2;
 
 function accountsMonthLabels(n) {
   const labels = [];
@@ -35,8 +132,8 @@ function accountsSectionRow(label, monthCount) {
   return `<tr class="accounts-row--header-label"><td>${escapeHtml(label)}</td><td colspan="${monthCount}"></td></tr>`;
 }
 
-function renderAccountsPlaceholder() {
-  const host = document.getElementById("accounts-view");
+function renderProfitLossTable() {
+  const body = document.getElementById("accounts-subtab-body");
   const months = accountsMonthLabels(ACCOUNTS_MONTHS_BACK);
   const n = months.length;
 
@@ -59,16 +156,10 @@ function renderAccountsPlaceholder() {
     accountsValueRow("Outstanding", n, "accounts-row--profit"),
   ].join("");
 
-  host.innerHTML = `
-    <div class="page-head" style="margin-bottom:1rem;">
-      <div>
-        <h1>Accounts</h1>
-        <p>Monthly income &amp; expenses at a glance.</p>
-      </div>
-    </div>
+  body.innerHTML = `
     <div class="panel accounts-table-wrap">
       <table class="accounts-table">
-        <thead><tr><th>Category</th>${headerCells}</tr></thead>
+        <thead><tr><th style="text-align:left;">Category</th>${headerCells}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
