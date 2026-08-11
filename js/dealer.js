@@ -823,8 +823,9 @@ function renderCars(list, isMaster) {
       guardClick(btn, async () => {
         const car = ALL_CARS.find((c) => c.id === btn.dataset.id);
         if (car.status === "sold") {
-          const confirmed = confirm(
-            "Marking this car available again will delete its sale entry, and your Accounts will be recalculated without it. Continue?"
+          const confirmed = await showConfirm(
+            "Marking this car available again will delete its sale entry, and your Accounts will be recalculated without it. Continue?",
+            { danger: true, confirmLabel: "Yes, mark available" }
           );
           if (!confirmed) return;
           const { error } = await window.db.rpc("dealer_revert_sold", {
@@ -848,7 +849,7 @@ function renderCars(list, isMaster) {
     btn.addEventListener(
       "click",
       guardClick(btn, async () => {
-        if (!confirm("Delete this listing? This can't be undone.")) return;
+        if (!(await showConfirm("Delete this listing? This can't be undone.", { danger: true, confirmLabel: "Delete" }))) return;
         const { error } = await window.db.rpc("dealer_delete_car", {
           p_dealer_id: DEALER_SESSION.id,
           p_car_id: btn.dataset.id,
