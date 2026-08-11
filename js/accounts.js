@@ -2,9 +2,12 @@
  * "Accounts" tab — two sub-tabs:
  *   1. Entries          — real sale records (car + sale amount + the
  *                          two commissions + earning), newest first.
- *   2. Profit and Loss  — monthly ledger. Still a UI placeholder;
- *                          real numbers get wired in once the P&L
- *                          calculation rules are defined.
+ *   2. Profit and Loss  — monthly ledger. "Sales" is now real data,
+ *                          pulled from the same sale entries (summed
+ *                          by month). Everything else (COGS, Expenses,
+ *                          Total Expenses, Net Profit, Outstanding)
+ *                          stays a placeholder until there's an
+ *                          expense-entry feature to source them from.
  *
  * Kept in its own file so this can keep growing without touching
  * dealer.js.
@@ -39,8 +42,21 @@ function renderAccountsView() {
   if (ACCOUNTS_SUBTAB === "entries") {
     loadAndRenderEntries();
   } else {
-    renderProfitLossTable();
+    loadAndRenderProfitLoss();
   }
+}
+
+/* ===================================================================
+   Shared: fetch sale entries
+=================================================================== */
+async function fetchSalesEntries() {
+  const { data, error } = await window.db.rpc("dealer_list_sales", { p_dealer_id: DEALER_SESSION.id });
+  if (error) {
+    console.error(error);
+    return { entries: [], error };
+  }
+  SALES_ENTRIES = data || [];
+  return { entries: SALES_ENTRIES, error: null };
 }
 
 /* ===================================================================
@@ -50,14 +66,12 @@ async function loadAndRenderEntries() {
   const body = document.getElementById("accounts-subtab-body");
   body.innerHTML = `<div class="empty-row">Loading entries…</div>`;
 
-  const { data, error } = await window.db.rpc("dealer_list_sales", { p_dealer_id: DEALER_SESSION.id });
+  const { entries, error } = await fetchSalesEntries();
   if (error) {
-    console.error(error);
     body.innerHTML = `<div class="empty-row">${escapeHtml(friendlyError(error))}</div>`;
     return;
   }
-  SALES_ENTRIES = data || [];
-  renderEntriesTable(SALES_ENTRIES);
+  renderEntriesTable(entries);
 }
 
 function renderEntriesTable(list) {
@@ -104,12 +118,14 @@ function renderEntriesTable(list) {
 }
 
 /* ===================================================================
-   Profit and Loss — monthly ledger (placeholder, values wired later)
+   Profit and Loss — monthly ledger
+   "Sales" row = real sum of sale-entry earnings for that month.
+   Everything else stays a placeholder (no expense-entry source yet).
 =================================================================== */
 const ACCOUNTS_MONTHS_BACK = 2;
 
-function accountsMonthLabels(n) {
-  const labels = [];
+function accountsMonths(n) {
+  const months = [];
   const now = new Date();
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -117,9 +133,9 @@ function accountsMonthLabels(n) {
       .toLocaleDateString("en-IN", { month: "short", year: "2-digit" })
       .toUpperCase()
       .replace(" ", "-");
-    labels.push(label);
+    months.push({ label, year: d.getFullYear(), month: d.getMonth() });
   }
-  return labels;
+  return months;
 }
 
 function accountsValueRow(label, monthCount, cls, sub) {
@@ -132,15 +148,34 @@ function accountsSectionRow(label, monthCount) {
   return `<tr class="accounts-row--header-label"><td>${escapeHtml(label)}</td><td colspan="${monthCount}"></td></tr>`;
 }
 
-function renderProfitLossTable() {
+async function loadAndRenderProfitLoss() {
   const body = document.getElementById("accounts-subtab-body");
-  const months = accountsMonthLabels(ACCOUNTS_MONTHS_BACK);
-  const n = months.length;
+  body.innerHTML = `<div class="empty-row">Loading…</div>`;
 
-  const headerCells = months.map((m) => `<th>${escapeHtml(m)}</th>`).join("");
+  const months = accountsMonths(ACCOUNTS_MONTHS_BACK);
+  const { entries, error } = await fetchSalesEntries();
+  if (error) {
+    body.innerHTML = `<div class="empty-row">${escapeHtml(friendlyError(error))}</div>`;
+    return;
+  }
+
+  // Sum each month's real earnings (seller + buyer commission) from Entries.
+  const salesByMonth = months.map((m) =>
+    entries
+      .filter((s) => {
+        const d = new Date(s.sold_at);
+        return d.getFullYear() === m.year && d.getMonth() === m.month;
+      })
+      .reduce((sum, s) => sum + (Number(s.total_earning) || 0), 0)
+  );
+
+  const n = months.length;
+  const headerCells = months.map((m) => `<th>${escapeHtml(m.label)}</th>`).join("");
+  const salesCells = salesByMonth.map((v) => `<td>${formatCurrency(v)}</td>`).join("");
+  const salesRow = `<tr class="accounts-row--income"><td>Sales</td>${salesCells}</tr>`;
 
   const rows = [
-    accountsValueRow("Sales", n, "accounts-row--income"),
+    salesRow,
     accountsValueRow("Cost of Goods Sold", n, "accounts-row--income"),
     accountsValueRow("Gross Profit (Sales \u2212 COGS)", n, "accounts-row--income accounts-row--section"),
     accountsSectionRow("Expenses", n),
@@ -157,6 +192,7 @@ function renderProfitLossTable() {
   ].join("");
 
   body.innerHTML = `
+    <p class="wizard-hint" style="text-align:left;margin-bottom:0.8rem;">"Sales" is your real commission earnings by month. The rest lights up once expense tracking is added.</p>
     <div class="panel accounts-table-wrap">
       <table class="accounts-table">
         <thead><tr><th style="text-align:left;">Category</th>${headerCells}</tr></thead>
