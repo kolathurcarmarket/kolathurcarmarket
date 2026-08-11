@@ -659,7 +659,7 @@ function renderCars(list, isMaster) {
       <div class="car-card__media">
         <span class="car-card__placeholder">${escapeHtml(c.car_number || "No number")}</span>
         <button type="button" class="icon-btn card-share-btn" data-action="share" data-id="${c.id}" aria-label="Share on WhatsApp">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+          ${whatsappIconSvg(16)}
         </button>
         <span class="status-pill status-pill--${c.status}">${escapeHtml(c.status)}</span>
       </div>
@@ -823,16 +823,19 @@ function renderCars(list, isMaster) {
       guardClick(btn, async () => {
         const car = ALL_CARS.find((c) => c.id === btn.dataset.id);
         if (car.status === "sold") {
-          const { error } = await window.db.rpc("dealer_set_car_status", {
+          const confirmed = confirm(
+            "Marking this car available again will delete its sale entry, and your Accounts will be recalculated without it. Continue?"
+          );
+          if (!confirmed) return;
+          const { error } = await window.db.rpc("dealer_revert_sold", {
             p_dealer_id: DEALER_SESSION.id,
             p_car_id: car.id,
-            p_status: "available",
           });
           if (error) {
             toast(friendlyError(error), "error");
             return;
           }
-          toast("Listing updated.", "success");
+          toast("Marked available. Sale entry removed.", "success");
           await loadCars();
         } else {
           openSoldWizard(car);
@@ -1152,8 +1155,8 @@ function openCarDetail(car, isMaster) {
         .join("")}
     </div>
     <div id="detail-bookings"></div>
-    <button type="button" class="btn btn--ghost btn--block" id="detail-share-btn" style="margin-bottom:0.6rem;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:0.4rem;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+    <button type="button" class="btn btn--whatsapp btn--block" id="detail-share-btn" style="margin-bottom:0.6rem;">
+      <span style="vertical-align:-3px;margin-right:0.4rem;display:inline-block;">${whatsappIconSvg(18)}</span>
       Share on WhatsApp
     </button>
     ${
