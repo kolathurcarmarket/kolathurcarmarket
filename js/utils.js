@@ -169,6 +169,37 @@ function whatsappIconSvg(size = 16) {
   </svg>`;
 }
 
+/**
+ * Themed replacement for the browser's native confirm() — opens the
+ * shared #confirm-modal and resolves true/false based on the button
+ * the person taps. Usage: `if (!(await showConfirm("..."))) return;`
+ */
+function showConfirm(message, opts = {}) {
+  const { confirmLabel = "Continue", cancelLabel = "Cancel", danger = false } = opts;
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirm-modal");
+    const body = document.getElementById("confirm-modal-body");
+    body.innerHTML = `
+      <p class="wizard-question" style="font-size:1.05rem;">${escapeHtml(message)}</p>
+      <div class="wizard-nav" style="margin-top:1.2rem;">
+        <button type="button" class="wizard-back" id="confirm-cancel-btn">${escapeHtml(cancelLabel)}</button>
+        <button type="button" class="btn ${danger ? "btn--danger" : "btn--primary"}" id="confirm-ok-btn" style="flex:1;">${escapeHtml(confirmLabel)}</button>
+      </div>
+    `;
+    modal.classList.add("open");
+
+    const finish = (result) => {
+      modal.classList.remove("open");
+      resolve(result);
+    };
+    document.getElementById("confirm-cancel-btn").onclick = () => finish(false);
+    document.getElementById("confirm-ok-btn").onclick = () => finish(true);
+    modal.querySelectorAll("[data-close-modal]").forEach((el) => {
+      el.onclick = () => finish(false);
+    });
+  });
+}
+
 function escapeHtml(str = "") {
   return String(str).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
