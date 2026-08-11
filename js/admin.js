@@ -170,7 +170,7 @@ function renderDealers(list) {
     btn.addEventListener(
       "click",
       guardClick(btn, async () => {
-        if (!confirm("Remove this dealer? Their car listings will be removed too.")) return;
+        if (!(await showConfirm("Remove this dealer? Their car listings will be removed too.", { danger: true, confirmLabel: "Remove" }))) return;
         const { error } = await window.db.rpc("admin_delete_dealer", {
           p_admin_id: ADMIN_SESSION.id,
           p_dealer_id: btn.dataset.id,
