@@ -643,10 +643,18 @@ table.data-table {
   width: 30px;
   height: 30px;
   z-index: 2;
-  background: rgba(14,16,19,0.75);
-  border-color: rgba(255,255,255,0.15);
+  background: #25D366;
+  border-color: #128C7E;
+  color: #fff;
 }
-.car-card__media .card-share-btn:hover { color: #25D366; border-color: #25D366; }
+.car-card__media .card-share-btn:hover { background: #2fe375; }
+
+.btn--whatsapp {
+  background: #25D366;
+  color: #fff;
+  border-color: #128C7E;
+}
+.btn--whatsapp:hover:not(:disabled) { background: #2fe375; }
 .car-card__placeholder {
   position: absolute;
   inset: 0;
