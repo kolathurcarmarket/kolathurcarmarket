@@ -3,6 +3,16 @@
  * views all live in index.html; this wires every view once and then
  * routes to the right one based on whatever session already exists).
  */
+
+// Registering this is what makes the "Install app" / "Add to Home
+// Screen" prompt available, and lets the app open instantly (and
+// keep working with a flaky connection) once installed.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => console.warn("SW registration failed:", err));
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   wireLoginView();
   wireAdminView();
