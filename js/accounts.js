@@ -13,7 +13,7 @@
  * dealer.js.
  */
 
-let ACCOUNTS_SUBTAB = "entries"; // "entries" | "pnl"
+let ACCOUNTS_SUBTAB = "quickcalc"; // "quickcalc" | "entries" | "pnl"
 let SALES_ENTRIES = [];
 
 function renderAccountsView() {
@@ -26,6 +26,7 @@ function renderAccountsView() {
       </div>
     </div>
     <div class="garage-tabs" style="margin-bottom:1.2rem;" role="tablist" aria-label="Choose accounts view">
+      <button class="garage-tab ${ACCOUNTS_SUBTAB === "quickcalc" ? "active" : ""}" data-subtab="quickcalc" role="tab">Quick Calc</button>
       <button class="garage-tab ${ACCOUNTS_SUBTAB === "entries" ? "active" : ""}" data-subtab="entries" role="tab">Entries</button>
       <button class="garage-tab ${ACCOUNTS_SUBTAB === "pnl" ? "active" : ""}" data-subtab="pnl" role="tab">Profit and Loss</button>
     </div>
@@ -39,7 +40,9 @@ function renderAccountsView() {
     });
   });
 
-  if (ACCOUNTS_SUBTAB === "entries") {
+  if (ACCOUNTS_SUBTAB === "quickcalc") {
+    renderQuickCalcView(); // lives in js/quick-calc.js
+  } else if (ACCOUNTS_SUBTAB === "entries") {
     loadAndRenderEntries();
   } else {
     loadAndRenderProfitLoss();
