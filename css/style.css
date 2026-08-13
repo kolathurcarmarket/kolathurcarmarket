@@ -88,6 +88,56 @@ a { color: var(--amber); }
 #conn-banner { display: none; background: var(--red-dim); color: var(--red); border-bottom: 1px solid var(--red); padding: 0.6rem 1rem; font-size: 0.83rem; text-align: center; }
 #conn-banner.show { display: block; }
 
+/* Custom install-app banner */
+#install-banner {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  z-index: 40;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+#install-banner.show { opacity: 1; transform: none; }
+.install-banner__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.install-banner__text { flex: 1; font-size: 0.85rem; color: var(--text); line-height: 1.35; }
+.install-banner__actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.install-banner__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.2rem;
+}
+.install-banner__close:hover { color: var(--text); }
+
+@media (max-width: 480px) {
+  #install-banner { flex-wrap: wrap; }
+  .install-banner__text { flex-basis: 100%; }
+}
+
 /* ---------------------------------------------------------------
    Buttons
 ------------------------------------------------------------------ */
