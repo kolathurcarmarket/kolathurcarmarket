@@ -1121,6 +1121,42 @@ table.data-table {
   .accounts-table td, .accounts-table th { padding: 0.6rem 0.7rem; font-size: 0.82rem; }
 }
 
+/* ===================================================================
+   Accounts -> Quick Calc (js/quick-calc.js)
+   Two big touch-friendly buttons: Add Expenses / Add Earning.
+=================================================================== */
+.quick-calc-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.quick-calc-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.quick-calc-btn:active { transform: scale(0.98); }
+.quick-calc-btn--expense { color: var(--red); }
+.quick-calc-btn--expense:hover { border-color: var(--red); background: var(--red-dim); }
+.quick-calc-btn--earning { color: var(--green); }
+.quick-calc-btn--earning:hover { border-color: var(--green); background: var(--green-dim); }
+
+@media (max-width: 480px) {
+  .quick-calc-buttons { grid-template-columns: 1fr; }
+  .quick-calc-btn { padding: 1.5rem 1rem; }
+}
+
 /* Notification bell */
 .notif-wrap { position: relative; }
 .icon-btn {
