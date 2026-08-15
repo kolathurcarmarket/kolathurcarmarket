@@ -22,11 +22,15 @@ function wireAdminView() {
       document.getElementById("add-dealer-modal").classList.remove("open");
     })
   );
+
+  document
+    .getElementById("form-add-category")
+    .addEventListener("submit", guardClick(document.getElementById("btn-add-category"), addExpenseCategory));
 }
 
 async function loadAdminData(session) {
   ADMIN_SESSION = session;
-  await Promise.all([loadStats(), loadDealers()]);
+  await Promise.all([loadStats(), loadDealers(), loadExpenseCategories()]);
 }
 
 async function loadStats() {
@@ -240,4 +244,134 @@ async function addDealer(e) {
   document.getElementById("add-dealer-modal").classList.remove("open");
   await loadDealers();
   await loadStats();
+}
+
+/* ===================================================================
+   Expense categories — the list dealers pick from in Quick Calc
+=================================================================== */
+let ALL_CATEGORIES = [];
+
+async function loadExpenseCategories() {
+  const tbody = document.getElementById("categories-tbody");
+  tbody.innerHTML = `<tr><td colspan="2" class="empty-row">Loading categories…</td></tr>`;
+
+  const { data, error } = await window.db.rpc("admin_list_expense_categories", { p_admin_id: ADMIN_SESSION.id });
+  if (error) {
+    console.error(error);
+    tbody.innerHTML = `<tr><td colspan="2" class="empty-row">${escapeHtml(friendlyError(error))}</td></tr>`;
+    return;
+  }
+  ALL_CATEGORIES = data || [];
+  renderCategories(ALL_CATEGORIES);
+}
+
+function renderCategories(list) {
+  const tbody = document.getElementById("categories-tbody");
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="2" class="empty-row">No categories yet. Add one above.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list
+    .map(
+      (c) => `
+    <tr data-id="${c.id}">
+      <td class="cat-name-cell">${escapeHtml(c.name)}</td>
+      <td class="row-actions">
+        <button class="btn btn--ghost btn--sm" data-action="edit-cat" data-id="${c.id}">Edit</button>
+        <button class="btn btn--danger btn--sm" data-action="delete-cat" data-id="${c.id}">Delete</button>
+      </td>
+    </tr>`
+    )
+    .join("");
+
+  tbody.querySelectorAll('[data-action="edit-cat"]').forEach((btn) => {
+    btn.addEventListener("click", () => startEditCategory(btn.dataset.id));
+  });
+
+  tbody.querySelectorAll('[data-action="delete-cat"]').forEach((btn) => {
+    btn.addEventListener(
+      "click",
+      guardClick(btn, async () => {
+        const cat = ALL_CATEGORIES.find((c) => c.id === btn.dataset.id);
+        const ok = await showConfirm(
+          `Delete the "${cat?.name || "this"}" category? Existing expense entries keep their record, but it won't be selectable anymore.`,
+          { danger: true, confirmLabel: "Delete" }
+        );
+        if (!ok) return;
+        const { error } = await window.db.rpc("admin_delete_expense_category", {
+          p_admin_id: ADMIN_SESSION.id,
+          p_category_id: btn.dataset.id,
+        });
+        if (error) {
+          toast(friendlyError(error), "error");
+          return;
+        }
+        toast("Category removed.", "success");
+        await loadExpenseCategories();
+      })
+    );
+  });
+}
+
+function startEditCategory(id) {
+  const row = document.querySelector(`#categories-tbody tr[data-id="${id}"]`);
+  const cat = ALL_CATEGORIES.find((c) => c.id === id);
+  if (!row || !cat) return;
+
+  row.querySelector(".cat-name-cell").innerHTML = `
+    <input type="text" class="search-input" id="cat-edit-input" value="${escapeHtml(cat.name)}" style="width:100%;" />
+  `;
+  row.querySelector(".row-actions").innerHTML = `
+    <button class="btn btn--primary btn--sm" id="cat-save-btn">Save</button>
+    <button class="btn btn--ghost btn--sm" id="cat-cancel-btn">Cancel</button>
+  `;
+
+  const input = document.getElementById("cat-edit-input");
+  input.focus();
+  input.select();
+
+  document.getElementById("cat-cancel-btn").addEventListener("click", () => renderCategories(ALL_CATEGORIES));
+
+  document.getElementById("cat-save-btn").addEventListener(
+    "click",
+    guardClick(document.getElementById("cat-save-btn"), async () => {
+      const newName = input.value.trim();
+      if (!newName) {
+        toast("Category name can't be empty.", "error");
+        return;
+      }
+      const { error } = await window.db.rpc("admin_update_expense_category", {
+        p_admin_id: ADMIN_SESSION.id,
+        p_category_id: id,
+        p_name: newName,
+      });
+      if (error) {
+        toast(friendlyError(error), "error");
+        return;
+      }
+      toast("Category updated.", "success");
+      await loadExpenseCategories();
+    })
+  );
+}
+
+async function addExpenseCategory(e) {
+  e.preventDefault();
+  const input = document.getElementById("new-category-name");
+  const name = input.value.trim();
+  if (!name) return;
+
+  const { error } = await window.db.rpc("admin_add_expense_category", {
+    p_admin_id: ADMIN_SESSION.id,
+    p_name: name,
+  });
+
+  if (error) {
+    toast(friendlyError(error), "error");
+    return;
+  }
+
+  toast("Category added.", "success");
+  input.value = "";
+  await loadExpenseCategories();
 }
