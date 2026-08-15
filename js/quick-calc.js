@@ -36,12 +36,106 @@ function quickCalcIcon(kind) {
 }
 
 /* ===================================================================
-   Placeholders — the dealer will describe the exact flow next.
+   Add Expenses — amount, then category (category list comes from
+   the admin-managed expense_categories table).
 =================================================================== */
+let qcExpenseAmount = null;
+
 function openQuickCalcAddExpense() {
-  toast("Tell me the flow for this and I'll wire it up.", "info");
+  qcExpenseAmount = null;
+  document.getElementById("quickcalc-modal-title").textContent = "Add Expenses";
+  renderQuickCalcExpenseStep1();
+  document.getElementById("quickcalc-modal").classList.add("open");
+  wireQuickCalcModalClose();
 }
 
+function wireQuickCalcModalClose() {
+  document.querySelectorAll("#quickcalc-modal [data-close-modal]").forEach((el) => {
+    el.onclick = () => document.getElementById("quickcalc-modal").classList.remove("open");
+  });
+}
+
+function renderQuickCalcExpenseStep1() {
+  const body = document.getElementById("quickcalc-modal-body");
+  body.innerHTML = `
+    <div class="wizard-question">How much did you spend?</div>
+    <div class="wizard-input-wrap">
+      <input class="wizard-input" id="qce-amount" type="number" inputmode="numeric" placeholder="e.g. 1500" value="${qcExpenseAmount ?? ""}" />
+      <p class="form-error" id="qce-error" role="alert"></p>
+    </div>
+    <div class="wizard-nav">
+      <button type="button" class="btn btn--primary btn--block" id="qce-next-btn">Next</button>
+    </div>
+  `;
+  const input = document.getElementById("qce-amount");
+  input.focus();
+  input.addEventListener("focus", () => scrollFieldIntoView(input));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      document.getElementById("qce-next-btn").click();
+    }
+  });
+  document.getElementById("qce-next-btn").addEventListener("click", () => {
+    const errorEl = document.getElementById("qce-error");
+    const val = input.value.trim();
+    if (!val || isNaN(Number(val)) || Number(val) <= 0) {
+      errorEl.textContent = "Please enter a valid amount.";
+      return;
+    }
+    qcExpenseAmount = Number(val);
+    renderQuickCalcExpenseStep2();
+  });
+}
+
+async function renderQuickCalcExpenseStep2() {
+  const body = document.getElementById("quickcalc-modal-body");
+  body.innerHTML = `
+    <div class="wizard-question">Which category?</div>
+    <div class="wizard-choices" id="qce-categories"><div class="empty-row">Loading categories…</div></div>
+    <div class="wizard-nav">
+      <button type="button" class="wizard-back" id="qce-back-btn">← Back</button>
+    </div>
+  `;
+  document.getElementById("qce-back-btn").addEventListener("click", renderQuickCalcExpenseStep1);
+
+  const { data, error } = await window.db.rpc("dealer_list_expense_categories", { p_dealer_id: DEALER_SESSION.id });
+  const list = document.getElementById("qce-categories");
+  if (error) {
+    list.innerHTML = `<p class="form-error">${escapeHtml(friendlyError(error))}</p>`;
+    return;
+  }
+  if (!data || !data.length) {
+    list.innerHTML = `<p class="wizard-hint">No categories yet — ask your admin to add some.</p>`;
+    return;
+  }
+
+  list.innerHTML = data
+    .map((c) => `<button type="button" class="wizard-choice" data-cat-id="${c.id}">${escapeHtml(c.name)}</button>`)
+    .join("");
+
+  list.querySelectorAll(".wizard-choice").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      const { error: err2 } = await window.db.rpc("dealer_add_expense", {
+        p_dealer_id: DEALER_SESSION.id,
+        p_category_id: btn.dataset.catId,
+        p_amount: qcExpenseAmount,
+      });
+      if (err2) {
+        toast(friendlyError(err2), "error");
+        btn.disabled = false;
+        return;
+      }
+      document.getElementById("quickcalc-modal").classList.remove("open");
+      toast(`${formatCurrency(qcExpenseAmount)} expense recorded.`, "success");
+    });
+  });
+}
+
+/* ===================================================================
+   Add Earning — placeholder until the dealer describes this flow.
+=================================================================== */
 function openQuickCalcAddEarning() {
   toast("Tell me the flow for this and I'll wire it up.", "info");
 }
