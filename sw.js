@@ -8,7 +8,7 @@
  * IMPORTANT: bump CACHE_NAME (e.g. "drivedesk-shell-v2") whenever you
  * want to force everyone's cached files to refresh after a deploy.
  */
-const CACHE_NAME = "drivedesk-shell-v3";
+const CACHE_NAME = "drivedesk-shell-v4";
 
 const SHELL_ASSETS = [
   "./",
