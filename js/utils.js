@@ -113,6 +113,7 @@ function logout() {
   }
   switchView("login");
   document.getElementById("form-login")?.reset();
+  if (typeof resetLoginPin === "function") resetLoginPin();
 }
 
 /* ---------------------------------------------------------------
