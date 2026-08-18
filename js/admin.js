@@ -128,10 +128,10 @@ function renderDealers(list) {
     btn.addEventListener(
       "click",
       guardClick(btn, async () => {
-        const newPin = prompt("Enter a new 4–6 digit PIN for this dealer:");
+        const newPin = prompt("Enter a new 4-digit PIN for this dealer:");
         if (newPin === null) return;
-        if (!/^\d{4,6}$/.test(newPin.trim())) {
-          toast("PIN must be 4–6 digits.", "error");
+        if (!/^\d{4}$/.test(newPin.trim())) {
+          toast("PIN must be exactly 4 digits.", "error");
           return;
         }
         const { error } = await window.db.rpc("admin_reset_dealer_pin", {
@@ -218,8 +218,8 @@ async function addDealer(e) {
     errorEl.textContent = "Username, PIN and dealer name are required.";
     return;
   }
-  if (!/^\d{4,6}$/.test(pin)) {
-    errorEl.textContent = "PIN must be 4–6 digits.";
+  if (!/^\d{4}$/.test(pin)) {
+    errorEl.textContent = "PIN must be exactly 4 digits.";
     return;
   }
 
