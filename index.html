@@ -57,22 +57,50 @@
         <div class="plate-strip">SECURE SIGN IN</div>
 
         <form id="form-login" novalidate>
-          <div class="field">
+          <div class="field" id="username-field-wrap">
             <label for="login-username">Username</label>
             <div class="plate-input-wrap">
               <span class="plate-flag">ID</span>
               <input type="text" id="login-username" autocomplete="username" placeholder="e.g. rk.motors" required />
             </div>
           </div>
+          <div class="field" id="remembered-user-wrap" style="display:none;">
+            <label>Username</label>
+            <div class="remembered-user-card">
+              <div class="remembered-user-card__avatar" id="remembered-user-avatar">?</div>
+              <div class="remembered-user-card__info">
+                <div class="remembered-user-card__label">Continue as</div>
+                <div class="remembered-user-card__name" id="remembered-user-name"></div>
+              </div>
+              <button type="button" class="remembered-user-card__switch" id="switch-user-btn">Not you?</button>
+            </div>
+          </div>
           <div class="field">
-            <label for="login-pin">PIN</label>
-            <div class="pin-row">
-              <input type="password" id="login-pin" inputmode="numeric" autocomplete="current-password" placeholder="••••" required />
-              <button type="button" class="pin-toggle" data-target="login-pin">Show</button>
+            <div class="pin-label-row">
+              <label style="margin-bottom:0;">PIN</label>
+              <button type="button" class="pin-toggle" id="login-pin-toggle">Show</button>
+            </div>
+            <div class="pin-dots" id="login-pin-dots">
+              <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+            </div>
+            <div class="numeric-keypad" id="login-keypad">
+              <button type="button" class="keypad-btn" data-key="1">1</button>
+              <button type="button" class="keypad-btn" data-key="2">2</button>
+              <button type="button" class="keypad-btn" data-key="3">3</button>
+              <button type="button" class="keypad-btn" data-key="4">4</button>
+              <button type="button" class="keypad-btn" data-key="5">5</button>
+              <button type="button" class="keypad-btn" data-key="6">6</button>
+              <button type="button" class="keypad-btn" data-key="7">7</button>
+              <button type="button" class="keypad-btn" data-key="8">8</button>
+              <button type="button" class="keypad-btn" data-key="9">9</button>
+              <span></span>
+              <button type="button" class="keypad-btn" data-key="0">0</button>
+              <button type="button" class="keypad-btn keypad-btn--back" data-key="back" aria-label="Backspace">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+              </button>
             </div>
           </div>
           <p class="form-error" id="login-error" role="alert"></p>
-          <button type="submit" class="btn btn--primary btn--block" id="btn-login">Sign in</button>
         </form>
 
         <p class="hint">Don't have a login? Ask your admin to add your username &amp; PIN.</p>
@@ -348,8 +376,8 @@
           <div class="plate-input-wrap"><span class="plate-flag">DLR</span><input type="text" id="new-dealer-username" placeholder="e.g. rk.motors" required /></div>
         </div>
         <div class="field field--full">
-          <label for="new-dealer-pin">PIN (4–6 digits)</label>
-          <input type="password" id="new-dealer-pin" inputmode="numeric" placeholder="••••" required />
+          <label for="new-dealer-pin">PIN (4 digits)</label>
+          <input type="password" id="new-dealer-pin" inputmode="numeric" maxlength="4" placeholder="••••" required />
         </div>
         <div class="field field--full">
           <label for="new-dealer-name">Dealer / contact name</label>
