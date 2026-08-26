@@ -106,6 +106,11 @@ function switchView(name) {
 }
 
 function logout() {
+  const session = getSession();
+  if (session?.token && window.db) {
+    const rpcName = session.role === "admin" ? "admin_logout" : "dealer_logout";
+    window.db.rpc(rpcName, { p_token: session.token }).catch(() => {});
+  }
   clearSession();
   if (typeof notifPollInterval !== "undefined" && notifPollInterval) {
     clearInterval(notifPollInterval);
