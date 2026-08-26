@@ -570,14 +570,14 @@ async function finishWizard() {
   let error;
   if (wizardCarId) {
     ({ error } = await window.db.rpc("dealer_update_car", {
-      p_dealer_id: DEALER_SESSION.id,
+      p_token: DEALER_SESSION.token,
       p_car_id: wizardCarId,
       ...payload,
       p_status: wizardData.status || "available",
     }));
   } else {
     ({ error } = await window.db.rpc("dealer_add_car", {
-      p_dealer_id: DEALER_SESSION.id,
+      p_token: DEALER_SESSION.token,
       ...payload,
     }));
   }
@@ -609,7 +609,7 @@ async function loadCars() {
   const grid = document.getElementById("cars-grid");
   grid.innerHTML = `<div class="empty-row">Loading your listings…</div>`;
 
-  const { data, error } = await window.db.rpc("dealer_list_cars", { p_dealer_id: DEALER_SESSION.id });
+  const { data, error } = await window.db.rpc("dealer_list_cars", { p_token: DEALER_SESSION.token });
   if (error) {
     console.error(error);
     grid.innerHTML = `<div class="empty-row">${escapeHtml(friendlyError(error))}</div>`;
@@ -633,7 +633,7 @@ async function loadMasterCars() {
   const grid = document.getElementById("cars-grid");
   grid.innerHTML = `<div class="empty-row">Loading the master garage…</div>`;
 
-  const { data, error } = await window.db.rpc("dealer_list_all_cars", { p_dealer_id: DEALER_SESSION.id });
+  const { data, error } = await window.db.rpc("dealer_list_all_cars", { p_token: DEALER_SESSION.token });
   if (error) {
     console.error(error);
     grid.innerHTML = `<div class="empty-row">${escapeHtml(friendlyError(error))}</div>`;
@@ -725,7 +725,7 @@ function renderCars(list, isMaster) {
 
         const car = MASTER_CARS.find((c) => c.id === btn.dataset.id);
         const { error } = await window.db.rpc("dealer_book_car", {
-          p_dealer_id: DEALER_SESSION.id,
+          p_token: DEALER_SESSION.token,
           p_car_id: car.id,
         });
 
@@ -759,7 +759,7 @@ function renderCars(list, isMaster) {
 
         const car = MASTER_CARS.find((c) => c.id === btn.dataset.id);
         const { error } = await window.db.rpc("dealer_cancel_booking", {
-          p_dealer_id: DEALER_SESSION.id,
+          p_token: DEALER_SESSION.token,
           p_car_id: car.id,
         });
 
@@ -800,7 +800,7 @@ function renderCars(list, isMaster) {
         const car = ALL_CARS.find((c) => c.id === btn.dataset.id);
         if (car.status === "hold") {
           const { error } = await window.db.rpc("dealer_set_car_status", {
-            p_dealer_id: DEALER_SESSION.id,
+            p_token: DEALER_SESSION.token,
             p_car_id: car.id,
             p_status: "available",
           });
@@ -829,7 +829,7 @@ function renderCars(list, isMaster) {
           );
           if (!confirmed) return;
           const { error } = await window.db.rpc("dealer_revert_sold", {
-            p_dealer_id: DEALER_SESSION.id,
+            p_token: DEALER_SESSION.token,
             p_car_id: car.id,
           });
           if (error) {
@@ -851,7 +851,7 @@ function renderCars(list, isMaster) {
       guardClick(btn, async () => {
         if (!(await showConfirm("Delete this listing? This can't be undone.", { danger: true, confirmLabel: "Delete" }))) return;
         const { error } = await window.db.rpc("dealer_delete_car", {
-          p_dealer_id: DEALER_SESSION.id,
+          p_token: DEALER_SESSION.token,
           p_car_id: btn.dataset.id,
         });
         if (error) {
@@ -999,7 +999,7 @@ function openSoldWizard(car) {
         return v === "" ? null : Number(v);
       };
       const { error } = await window.db.rpc("dealer_mark_sold", {
-        p_dealer_id: DEALER_SESSION.id,
+        p_token: DEALER_SESSION.token,
         p_car_id: car.id,
         p_sale_amount: num("sold-amount"),
         p_seller_commission: num("sold-seller-comm"),
@@ -1031,7 +1031,7 @@ function openHoldPicker(car) {
     "click",
     guardClick(document.getElementById("hold-pick-customer"), async () => {
       const { error } = await window.db.rpc("dealer_set_car_status", {
-        p_dealer_id: DEALER_SESSION.id,
+        p_token: DEALER_SESSION.token,
         p_car_id: car.id,
         p_status: "hold",
         p_hold_type: "customer",
@@ -1049,7 +1049,7 @@ function openHoldPicker(car) {
 
   document.getElementById("hold-pick-dealer").addEventListener("click", async () => {
     body.innerHTML = `<div class="wizard-question">Loading dealers…</div>`;
-    const { data, error } = await window.db.rpc("dealer_list_dealers", { p_dealer_id: DEALER_SESSION.id });
+    const { data, error } = await window.db.rpc("dealer_list_dealers", { p_token: DEALER_SESSION.token });
     if (error) {
       body.innerHTML = `<p class="form-error">${escapeHtml(friendlyError(error))}</p>`;
       return;
@@ -1085,7 +1085,7 @@ function openHoldPicker(car) {
           return;
         }
         const { error: err2 } = await window.db.rpc("dealer_set_car_status", {
-          p_dealer_id: DEALER_SESSION.id,
+          p_token: DEALER_SESSION.token,
           p_car_id: car.id,
           p_status: "hold",
           p_hold_type: "dealer",
@@ -1183,7 +1183,7 @@ function openCarDetail(car, isMaster) {
   // Fetch the ordered list of dealers who booked this car (if any).
   const bookingsEl = document.getElementById("detail-bookings");
   window.db
-    .rpc("dealer_list_car_bookings", { p_dealer_id: DEALER_SESSION.id, p_car_id: car.id })
+    .rpc("dealer_list_car_bookings", { p_token: DEALER_SESSION.token, p_car_id: car.id })
     .then(({ data, error }) => {
       if (error || !data || !data.length) return;
       bookingsEl.innerHTML = `
@@ -1340,7 +1340,7 @@ function notifStorageKey(dealerId) {
 async function refreshNotifBadge() {
   if (!DEALER_SESSION) return;
   const { data, error } = await window.db.rpc("dealer_notifications", {
-    p_dealer_id: DEALER_SESSION.id,
+    p_token: DEALER_SESSION.token,
     p_limit: 30,
   });
   if (error) {
