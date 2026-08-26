@@ -53,7 +53,7 @@ function renderAccountsView() {
    Shared: fetch sale entries
 =================================================================== */
 async function fetchSalesEntries() {
-  const { data, error } = await window.db.rpc("dealer_list_sales", { p_dealer_id: DEALER_SESSION.id });
+  const { data, error } = await window.db.rpc("dealer_list_sales", { p_token: DEALER_SESSION.token });
   if (error) {
     console.error(error);
     return { entries: [], error };
