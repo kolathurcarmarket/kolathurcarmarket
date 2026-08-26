@@ -99,7 +99,7 @@ async function renderQuickCalcExpenseStep2() {
   `;
   document.getElementById("qce-back-btn").addEventListener("click", renderQuickCalcExpenseStep1);
 
-  const { data, error } = await window.db.rpc("dealer_list_expense_categories", { p_dealer_id: DEALER_SESSION.id });
+  const { data, error } = await window.db.rpc("dealer_list_expense_categories", { p_token: DEALER_SESSION.token });
   const list = document.getElementById("qce-categories");
   if (error) {
     list.innerHTML = `<p class="form-error">${escapeHtml(friendlyError(error))}</p>`;
@@ -118,7 +118,7 @@ async function renderQuickCalcExpenseStep2() {
     btn.addEventListener("click", async () => {
       btn.disabled = true;
       const { error: err2 } = await window.db.rpc("dealer_add_expense", {
-        p_dealer_id: DEALER_SESSION.id,
+        p_token: DEALER_SESSION.token,
         p_category_id: btn.dataset.catId,
         p_amount: qcExpenseAmount,
       });
