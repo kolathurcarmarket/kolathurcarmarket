@@ -34,7 +34,7 @@ async function loadAdminData(session) {
 }
 
 async function loadStats() {
-  const { data, error } = await window.db.rpc("admin_stats", { p_admin_id: ADMIN_SESSION.id });
+  const { data, error } = await window.db.rpc("admin_stats", { p_token: ADMIN_SESSION.token });
   if (error) {
     console.error(error);
     toast(friendlyError(error), "error");
@@ -64,7 +64,7 @@ async function loadDealers() {
   const tbody = document.getElementById("dealers-tbody");
   tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Loading dealers…</td></tr>`;
 
-  const { data, error } = await window.db.rpc("admin_list_dealers", { p_admin_id: ADMIN_SESSION.id });
+  const { data, error } = await window.db.rpc("admin_list_dealers", { p_token: ADMIN_SESSION.token });
   if (error) {
     console.error(error);
     tbody.innerHTML = `<tr><td colspan="7" class="empty-row">${escapeHtml(friendlyError(error))}</td></tr>`;
@@ -135,7 +135,7 @@ function renderDealers(list) {
           return;
         }
         const { error } = await window.db.rpc("admin_reset_dealer_pin", {
-          p_admin_id: ADMIN_SESSION.id,
+          p_token: ADMIN_SESSION.token,
           p_dealer_id: btn.dataset.id,
           p_new_pin: newPin.trim(),
         });
@@ -155,7 +155,7 @@ function renderDealers(list) {
       guardClick(btn, async () => {
         const newStatus = btn.dataset.status === "active" ? "inactive" : "active";
         const { error } = await window.db.rpc("admin_set_dealer_status", {
-          p_admin_id: ADMIN_SESSION.id,
+          p_token: ADMIN_SESSION.token,
           p_dealer_id: btn.dataset.id,
           p_status: newStatus,
         });
@@ -176,7 +176,7 @@ function renderDealers(list) {
       guardClick(btn, async () => {
         if (!(await showConfirm("Remove this dealer? Their car listings will be removed too.", { danger: true, confirmLabel: "Remove" }))) return;
         const { error } = await window.db.rpc("admin_delete_dealer", {
-          p_admin_id: ADMIN_SESSION.id,
+          p_token: ADMIN_SESSION.token,
           p_dealer_id: btn.dataset.id,
         });
         if (error) {
@@ -224,7 +224,7 @@ async function addDealer(e) {
   }
 
   const { error } = await window.db.rpc("admin_add_dealer", {
-    p_admin_id: ADMIN_SESSION.id,
+    p_token: ADMIN_SESSION.token,
     p_username: username,
     p_pin: pin,
     p_full_name: fullName,
@@ -255,7 +255,7 @@ async function loadExpenseCategories() {
   const tbody = document.getElementById("categories-tbody");
   tbody.innerHTML = `<tr><td colspan="2" class="empty-row">Loading categories…</td></tr>`;
 
-  const { data, error } = await window.db.rpc("admin_list_expense_categories", { p_admin_id: ADMIN_SESSION.id });
+  const { data, error } = await window.db.rpc("admin_list_expense_categories", { p_token: ADMIN_SESSION.token });
   if (error) {
     console.error(error);
     tbody.innerHTML = `<tr><td colspan="2" class="empty-row">${escapeHtml(friendlyError(error))}</td></tr>`;
@@ -299,7 +299,7 @@ function renderCategories(list) {
         );
         if (!ok) return;
         const { error } = await window.db.rpc("admin_delete_expense_category", {
-          p_admin_id: ADMIN_SESSION.id,
+          p_token: ADMIN_SESSION.token,
           p_category_id: btn.dataset.id,
         });
         if (error) {
@@ -341,7 +341,7 @@ function startEditCategory(id) {
         return;
       }
       const { error } = await window.db.rpc("admin_update_expense_category", {
-        p_admin_id: ADMIN_SESSION.id,
+        p_token: ADMIN_SESSION.token,
         p_category_id: id,
         p_name: newName,
       });
@@ -362,7 +362,7 @@ async function addExpenseCategory(e) {
   if (!name) return;
 
   const { error } = await window.db.rpc("admin_add_expense_category", {
-    p_admin_id: ADMIN_SESSION.id,
+    p_token: ADMIN_SESSION.token,
     p_name: name,
   });
 
