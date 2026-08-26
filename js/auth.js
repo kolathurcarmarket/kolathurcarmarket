@@ -130,7 +130,7 @@ async function attemptLogin() {
   }
   if (adminRes.data && adminRes.data.length > 0) {
     localStorage.setItem(REMEMBERED_USERNAME_KEY, username);
-    const session = { role: "admin", id: adminRes.data[0].id, username: adminRes.data[0].username };
+    const session = { role: "admin", id: adminRes.data[0].id, token: adminRes.data[0].token, username: adminRes.data[0].username };
     saveSession(session);
     toast("Welcome back, admin.", "success");
     switchView("admin");
@@ -154,6 +154,7 @@ async function attemptLogin() {
     const session = {
       role: "dealer",
       id: d.id,
+      token: d.token,
       username: d.username,
       fullName: d.full_name,
       shopName: d.shop_name,
