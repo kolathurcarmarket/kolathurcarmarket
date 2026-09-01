@@ -147,6 +147,20 @@ function initials(name = "") {
     .join("");
 }
 
+/**
+ * Turns a raw Supabase error into a specific, human-readable message
+ * instead of a generic "something went wrong".
+ */
+function friendlyError(error) {
+  if (!error) return "Something went wrong. Try again.";
+  const msg = (error.message || "").toLowerCase();
+  if (msg.includes("failed to fetch") || msg.includes("networkerror") || msg.includes("load failed")) {
+    return "Can't reach the database. Check your internet connection, or confirm the Supabase project is active and the URL/key in js/config.js match your dashboard.";
+  }
+  if (msg.includes("duplicate")) return "That username is already taken.";
+  return error.message || "Something went wrong. Try again.";
+}
+
 /** Scrolls a freshly-focused field into view once the mobile keyboard
  *  finishes animating in, so the input never ends up hidden behind it. */
 function scrollFieldIntoView(el) {
