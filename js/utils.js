@@ -107,9 +107,21 @@ function switchView(name) {
 
 function logout() {
   const session = getSession();
+  // Supabase's rpc() call returns a "thenable" builder, not a real
+  // Promise — it has .then() but NOT .catch(), so calling .catch()
+  // directly on it throws. Use the two-argument .then(ok, fail) form
+  // instead, which only needs .then() to exist. Best-effort, fire
+  // and forget — logout must never get stuck waiting on this.
   if (session?.token && window.db) {
     const rpcName = session.role === "admin" ? "admin_logout" : "dealer_logout";
-    window.db.rpc(rpcName, { p_token: session.token }).catch(() => {});
+    try {
+      window.db.rpc(rpcName, { p_token: session.token }).then(
+        () => {},
+        () => {}
+      );
+    } catch (e) {
+      console.warn("Session invalidation failed (non-blocking):", e);
+    }
   }
   clearSession();
   if (typeof notifPollInterval !== "undefined" && notifPollInterval) {
@@ -145,20 +157,6 @@ function initials(name = "") {
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() || "")
     .join("");
-}
-
-/**
- * Turns a raw Supabase error into a specific, human-readable message
- * instead of a generic "something went wrong".
- */
-function friendlyError(error) {
-  if (!error) return "Something went wrong. Try again.";
-  const msg = (error.message || "").toLowerCase();
-  if (msg.includes("failed to fetch") || msg.includes("networkerror") || msg.includes("load failed")) {
-    return "Can't reach the database. Check your internet connection, or confirm the Supabase project is active and the URL/key in js/config.js match your dashboard.";
-  }
-  if (msg.includes("duplicate")) return "That username is already taken.";
-  return error.message || "Something went wrong. Try again.";
 }
 
 /** Scrolls a freshly-focused field into view once the mobile keyboard
